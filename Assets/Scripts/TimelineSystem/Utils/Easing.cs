@@ -5,6 +5,7 @@ namespace TimelineSystem
     public enum EasingType
     {
         Linear,
+        Shake,
         EaseInQuad,
         EaseOutQuad,
         EaseInOutQuad,
@@ -43,6 +44,7 @@ namespace TimelineSystem
             switch (type)
             {
                 case EasingType.Linear: return t;
+                case EasingType.Shake: return t;
                 case EasingType.EaseInQuad: return t * t;
                 case EasingType.EaseOutQuad: return t * (2 - t);
                 case EasingType.EaseInOutQuad: return t < 0.5f ? 2 * t * t : -1 + (4 - 2 * t) * t;
