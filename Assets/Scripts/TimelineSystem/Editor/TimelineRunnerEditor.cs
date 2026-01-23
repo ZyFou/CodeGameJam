@@ -174,6 +174,7 @@ namespace TimelineSystem
                 // Type-specific fields
                 currentY = DrawStepTypeFields(step, rect.x, currentY, rect.width, lineHeight, spacing);
 
+                currentY += spacing * 2;
                 // Events section
                 EditorGUI.LabelField(new Rect(rect.x + 15, currentY, rect.width - 20, lineHeight), "Events", EditorStyles.boldLabel);
                 currentY += lineHeight + spacing;
@@ -215,8 +216,9 @@ namespace TimelineSystem
 
                 // Events section
                 height += EditorGUIUtility.singleLineHeight * 2; // Header + button
+                height += EditorGUIUtility.singleLineHeight; // Extra spacing
 
-                height += 10; // Bottom padding
+                height += 30; // Bottom padding
 
                 return height;
             };
