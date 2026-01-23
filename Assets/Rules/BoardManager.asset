@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RuleSetSO
   roundsPerTour: 3
   roundDuration: 30
-  spawnInterval: 1
-  onLifetime: 5
-  maxOnAtOnce: 6
+  spawnInterval: 0.5
+  onLifetime: 3
+  maxOnAtOnce: 8
   spawnChance: 0.6
   allowGreen: 1
   allowYellow: 1
@@ -45,7 +45,18 @@ MonoBehaviour:
   startTickets: 2
   entryCostBaseByRoundInTour: 050000000c00000014000000
   entryCostAddPerTour: 3
+  useEntryCostScaling: 0
+  entryCostPerTourOnly: 1
+  entryCostFirstTour: 5
+  entryCostScalingFactor: 1.2
+  entryCostRoundMultipliers:
+  - 1
+  - 2
+  - 3
   scoreToMoneyK: 10
+  debtStart: 20
+  debtAddPerTour: 5
+  depositStepPerTour: 5
   ticketsPerPlayedRound: 1
   tourBonusTicketsStart: 6
   tourBonusTicketsDecayPerRound: 2

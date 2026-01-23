@@ -83,6 +83,22 @@ public class RuleSetSO : ScriptableObject
     [Tooltip("Augmentation ajoutée à TOUS les coûts à chaque tour passé. Ex: +3 => Tour2 = base+3")]
     public int entryCostAddPerTour = 3;
 
+    [Header("Economy - Entry cost scaling")]
+    [Tooltip("Si activé, utilise la formule de scaling au lieu du tableau + add")]
+    public bool useEntryCostScaling = false;
+
+    [Tooltip("Si activé, le prix reste constant pendant un tour")]
+    public bool entryCostPerTourOnly = true;
+
+    [Tooltip("Prix de base au tour 1 (avant multiplicateurs)")]
+    public int entryCostFirstTour = 5;
+
+    [Tooltip("Facteur de scaling par tour (ex: 1.2 => +20% par tour)")]
+    public float entryCostScalingFactor = 1.2f;
+
+    [Tooltip("Multiplicateur par round dans le tour (index 0=round1)")]
+    public float[] entryCostRoundMultipliers = new float[] { 1f, 2f, 3f };
+
     [Header("Economy - Score -> Money")]
     [Tooltip("moneyGain = floor(score / scoreToMoneyK)")]
     public int scoreToMoneyK = 10;

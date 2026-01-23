@@ -150,6 +150,29 @@ public class RunManager : MonoBehaviour
 
     int GetEntryCost()
     {
+        if (rules.entryCostPerTourOnly)
+        {
+            int perTour = rules.entryCostFirstTour + (tourIndex - 1) * rules.entryCostAddPerTour;
+            return Mathf.Max(0, perTour);
+        }
+
+        if (rules.useEntryCostScaling)
+        {
+            float[] multipliers = rules.entryCostRoundMultipliers;
+            float roundMultiplier = 1f;
+            if (multipliers != null && multipliers.Length > 0)
+            {
+                int roundIdx = Mathf.Clamp(roundInTour - 1, 0, multipliers.Length - 1);
+                roundMultiplier = multipliers[roundIdx];
+            }
+
+            float scaled = rules.entryCostFirstTour
+                           * Mathf.Pow(rules.entryCostScalingFactor, Mathf.Max(0, tourIndex - 1))
+                           * roundMultiplier;
+
+            return Mathf.Max(0, Mathf.RoundToInt(scaled));
+        }
+
         int[] baseCosts = rules.entryCostBaseByRoundInTour;
         if (baseCosts == null || baseCosts.Length == 0)
             return 0;
@@ -189,6 +212,8 @@ public class RunManager : MonoBehaviour
 
         // score -> money
         int moneyGain = Mathf.FloorToInt((float)score / Mathf.Max(1, rules.scoreToMoneyK));
+        if (score > 0 && moneyGain == 0)
+            moneyGain = 1;
         money += moneyGain;
 
         // +1 ticket par round terminé (toujours)
