@@ -256,47 +256,54 @@ namespace TimelineSystem
             if (step is MoveStep moveStep)
             {
                 // Move step fields
-                Rect posRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                moveStep.targetPosition = EditorGUI.Vector3Field(posRect, "Target Position", moveStep.targetPosition);
+                Rect animPosRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                moveStep.animatePosition = EditorGUI.Toggle(animPosRect, "Animate Position", moveStep.animatePosition);
                 currentY += lineHeight + spacing;
 
-                Rect spaceRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                moveStep.space = (SpaceType)EditorGUI.EnumPopup(spaceRect, "Space", moveStep.space);
-                currentY += lineHeight + spacing;
-
-                Rect durationRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                moveStep.duration = EditorGUI.FloatField(durationRect, "Duration", moveStep.duration);
-                currentY += lineHeight + spacing;
-
-                Rect easingRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                moveStep.easing = DrawEasingSelector(easingRect, "Easing", moveStep.easing, false);
-                currentY += lineHeight + spacing;
-
-                Rect easePreviewRect = new Rect(x + 15, currentY, width - 20, lineHeight * 2f);
-                DrawEasingPreview(easePreviewRect, moveStep.easing);
-                currentY += easePreviewRect.height + spacing;
-
-                Rect shakeToggleRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                moveStep.useShake = EditorGUI.Toggle(shakeToggleRect, "Use Shake", moveStep.useShake);
-                currentY += lineHeight + spacing;
-
-                if (moveStep.useShake)
+                if (moveStep.animatePosition)
                 {
-                    Rect shakeIntensityRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.shakeIntensity = EditorGUI.Slider(shakeIntensityRect, "Shake Intensity", moveStep.shakeIntensity, 0f, 1f);
+                    Rect posRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.targetPosition = EditorGUI.Vector3Field(posRect, "Target Position", moveStep.targetPosition);
                     currentY += lineHeight + spacing;
 
-                    Rect shakeAmplitudeRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.shakeAmplitude = EditorGUI.FloatField(shakeAmplitudeRect, "Max Amplitude", moveStep.shakeAmplitude);
+                    Rect spaceRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.space = (SpaceType)EditorGUI.EnumPopup(spaceRect, "Space", moveStep.space);
                     currentY += lineHeight + spacing;
 
-                    Rect shakeFrequencyRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.shakeFrequency = EditorGUI.FloatField(shakeFrequencyRect, "Shake Frequency", moveStep.shakeFrequency);
+                    Rect durationRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.duration = EditorGUI.FloatField(durationRect, "Duration", moveStep.duration);
                     currentY += lineHeight + spacing;
 
-                    Rect shakeAxisRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.shakeAxis = EditorGUI.Vector3Field(shakeAxisRect, "Shake Axis", moveStep.shakeAxis);
+                    Rect easingRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.easing = DrawEasingSelector(easingRect, "Easing", moveStep.easing, false);
                     currentY += lineHeight + spacing;
+
+                    Rect easePreviewRect = new Rect(x + 15, currentY, width - 20, lineHeight * 2f);
+                    DrawEasingPreview(easePreviewRect, moveStep.easing);
+                    currentY += easePreviewRect.height + spacing;
+
+                    Rect shakeToggleRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.useShake = EditorGUI.Toggle(shakeToggleRect, "Use Shake", moveStep.useShake);
+                    currentY += lineHeight + spacing;
+
+                    if (moveStep.useShake)
+                    {
+                        Rect shakeIntensityRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                        moveStep.shakeIntensity = EditorGUI.Slider(shakeIntensityRect, "Shake Intensity", moveStep.shakeIntensity, 0f, 1f);
+                        currentY += lineHeight + spacing;
+
+                        Rect shakeAmplitudeRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                        moveStep.shakeAmplitude = EditorGUI.FloatField(shakeAmplitudeRect, "Max Amplitude", moveStep.shakeAmplitude);
+                        currentY += lineHeight + spacing;
+
+                        Rect shakeFrequencyRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                        moveStep.shakeFrequency = EditorGUI.FloatField(shakeFrequencyRect, "Shake Frequency", moveStep.shakeFrequency);
+                        currentY += lineHeight + spacing;
+
+                        Rect shakeAxisRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                        moveStep.shakeAxis = EditorGUI.Vector3Field(shakeAxisRect, "Shake Axis", moveStep.shakeAxis);
+                        currentY += lineHeight + spacing;
+                    }
                 }
 
                 Rect animRotRect = new Rect(x + 15, currentY, width - 20, lineHeight);
@@ -369,9 +376,13 @@ namespace TimelineSystem
             if (step is MoveStep moveStep)
             {
                 float previewHeight = lineHeight * 2f;
-                height += lineHeight * 6 + previewHeight; // position, space, duration, easing, preview, animRot, animScale
-                height += lineHeight; // shake toggle
-                if (moveStep.useShake) height += lineHeight * 4; // shake params
+                height += lineHeight; // animatePosition toggle
+                if (moveStep.animatePosition)
+                {
+                    height += lineHeight * 4 + previewHeight; // position, space, duration, easing, preview
+                    height += lineHeight; // shake toggle
+                    if (moveStep.useShake) height += lineHeight * 4; // shake params
+                }
                 if (moveStep.animateRotation) height += lineHeight * 3 + previewHeight; // targetRotation + rotationEasing + preview + rotationPivotOffset
                 if (moveStep.animateScale) height += lineHeight;
             }

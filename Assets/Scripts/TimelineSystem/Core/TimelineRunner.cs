@@ -339,6 +339,10 @@ namespace TimelineSystem
                             ? target.transform.parent.TransformPoint(targetPos)
                             : targetPos;
                     }
+                    if (!moveStep.animatePosition)
+                    {
+                        targetPos = lastPos;
+                    }
 
                     if (moveStep.animateRotation && moveStep.rotationPivotOffset != Vector3.zero)
                     {
@@ -454,6 +458,10 @@ namespace TimelineSystem
                         targetPos = target.transform.parent != null
                             ? target.transform.parent.TransformPoint(targetPos)
                             : targetPos;
+                    }
+                    if (!moveStep.animatePosition)
+                    {
+                        targetPos = currentPos;
                     }
                     Quaternion targetRot = Quaternion.Euler(moveStep.targetRotation);
                     Vector3 finalPos = targetPos;

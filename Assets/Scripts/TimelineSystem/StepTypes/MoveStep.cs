@@ -7,6 +7,7 @@ namespace TimelineSystem
     public class MoveStep : TimelineStep
     {
         [Header("Movement Configuration")]
+        public bool animatePosition = true;
         public Vector3 targetPosition = Vector3.zero;
         public SpaceType space = SpaceType.World;
         public float duration = 1f;
@@ -102,6 +103,10 @@ namespace TimelineSystem
             {
                 worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
             }
+            if (!animatePosition)
+            {
+                worldTargetPosition = startPosition;
+            }
 
             Quaternion currentRotation = startRotation;
             Quaternion targetQuat = startRotation;
@@ -139,7 +144,10 @@ namespace TimelineSystem
                 basePosition += Vector3.Scale(noise, axis) * amplitude * intensity;
             }
 
-            targetTransform.position = basePosition;
+            if (animatePosition || animateRotation)
+            {
+                targetTransform.position = basePosition;
+            }
 
             // Lerp scale if enabled
             if (animateScale)
@@ -161,6 +169,10 @@ namespace TimelineSystem
             {
                 worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
             }
+            if (!animatePosition)
+            {
+                worldTargetPosition = startPosition;
+            }
 
             if (animateRotation)
             {
@@ -170,7 +182,10 @@ namespace TimelineSystem
             }
             else
             {
-                targetTransform.position = worldTargetPosition;
+                if (animatePosition)
+                {
+                    targetTransform.position = worldTargetPosition;
+                }
             }
 
             if (animateScale)
