@@ -11,6 +11,7 @@ namespace TimelineSystem
         private ReorderableList stepsList;
         private TimelineRunner timelineRunner;
         private SerializedProperty stepsProperty;
+        private Dictionary<int, GameObject> previousTargetObjects = new Dictionary<int, GameObject>();
         private SerializedProperty playOnStartProperty;
         private SerializedProperty loopProperty;
         private SerializedProperty enableGlobalKeysProperty;
@@ -91,7 +92,23 @@ namespace TimelineSystem
 
                 // Target Object
                 Rect targetRect = new Rect(rect.x + 15, currentY, rect.width - 20, lineHeight);
-                step.targetObject = (GameObject)EditorGUI.ObjectField(targetRect, "Target Object", step.targetObject, typeof(GameObject), true);
+                GameObject newTarget = (GameObject)EditorGUI.ObjectField(targetRect, "Target Object", step.targetObject, typeof(GameObject), true);
+
+                // Detect target object change and auto-fill values for MoveStep
+                if (newTarget != step.targetObject && newTarget != null && step is MoveStep moveStep)
+                {
+                    moveStep.targetPosition = newTarget.transform.position;
+                    if (moveStep.space == SpaceType.Local && newTarget.transform.parent != null)
+                    {
+                        moveStep.targetPosition = newTarget.transform.parent.InverseTransformPoint(moveStep.targetPosition);
+                    }
+                    moveStep.targetRotation = newTarget.transform.rotation.eulerAngles;
+                    moveStep.targetScale = newTarget.transform.localScale;
+                    timelineRunner.UpdatePathVisualization();
+                    EditorUtility.SetDirty(timelineRunner);
+                }
+
+                step.targetObject = newTarget;
                 currentY += lineHeight + spacing;
 
                 // Current Position (readonly)
@@ -235,6 +252,14 @@ namespace TimelineSystem
                     Rect rotRect = new Rect(x + 15, currentY, width - 20, lineHeight);
                     moveStep.targetRotation = EditorGUI.Vector3Field(rotRect, "Target Rotation", moveStep.targetRotation);
                     currentY += lineHeight + spacing;
+
+                    Rect rotEasingRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.rotationEasing = (EasingType)EditorGUI.EnumPopup(rotEasingRect, "Rotation Easing", moveStep.rotationEasing);
+                    currentY += lineHeight + spacing;
+
+                    Rect rotPivotRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.rotationPivotOffset = EditorGUI.Vector3Field(rotPivotRect, "Rotation Pivot Offset", moveStep.rotationPivotOffset);
+                    currentY += lineHeight + spacing;
                 }
 
                 Rect animScaleRect = new Rect(x + 15, currentY, width - 20, lineHeight);
@@ -284,7 +309,7 @@ namespace TimelineSystem
             if (step is MoveStep moveStep)
             {
                 height += lineHeight * 6; // position, space, duration, easing, animRot toggle, animScale toggle
-                if (moveStep.animateRotation) height += lineHeight;
+                if (moveStep.animateRotation) height += lineHeight * 3; // targetRotation + rotationEasing + rotationPivotOffset
                 if (moveStep.animateScale) height += lineHeight;
             }
             else if (step is DelayStep)

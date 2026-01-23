@@ -307,6 +307,7 @@ namespace TimelineSystem
             // Track per-object: last target position and whether we've added a starting point
             Dictionary<GameObject, bool> objectHasStartPoint = new Dictionary<GameObject, bool>();
             Dictionary<GameObject, Vector3> objectLastPos = new Dictionary<GameObject, Vector3>();
+            Dictionary<GameObject, Quaternion> objectLastRot = new Dictionary<GameObject, Quaternion>();
 
             for (int i = 0; i < steps.Count; i++)
             {
@@ -323,9 +324,12 @@ namespace TimelineSystem
                         pathPoints.Add(startPos);
                         objectHasStartPoint[target] = true;
                         objectLastPos[target] = startPos;
+                        objectLastRot[target] = target.transform.rotation;
                     }
 
-                    // Get target position for this step
+                    Vector3 lastPos = objectLastPos[target];
+                    Quaternion startRot = objectLastRot[target];
+
                     Vector3 targetPos = moveStep.targetPosition;
 
                     // Handle local vs world space
@@ -336,9 +340,37 @@ namespace TimelineSystem
                             : targetPos;
                     }
 
-                    // Add the target position (continues from last position)
-                    pathPoints.Add(targetPos);
-                    objectLastPos[target] = targetPos;
+                    if (moveStep.animateRotation && moveStep.rotationPivotOffset != Vector3.zero)
+                    {
+                        Quaternion targetRot = Quaternion.Euler(moveStep.targetRotation);
+                        Vector3 pivotStart = lastPos + (startRot * moveStep.rotationPivotOffset);
+                        Vector3 pivotEnd = targetPos + (targetRot * moveStep.rotationPivotOffset);
+                        const int segments = 24;
+
+                        for (int s = 1; s <= segments; s++)
+                        {
+                            float rawT = s / (float)segments;
+                            float moveT = Easing.Ease(rawT, moveStep.easing);
+                            float rotT = Easing.Ease(rawT, moveStep.rotationEasing);
+                            Vector3 pivotPos = Vector3.Lerp(pivotStart, pivotEnd, moveT);
+                            Quaternion rot = Quaternion.Lerp(startRot, targetRot, rotT);
+                            Vector3 pos = pivotPos - (rot * moveStep.rotationPivotOffset);
+                            pathPoints.Add(pos);
+                        }
+
+                        objectLastPos[target] = targetPos;
+                    }
+                    else
+                    {
+                        // Add the target position (continues from last position)
+                        pathPoints.Add(targetPos);
+                        objectLastPos[target] = targetPos;
+                    }
+
+                    if (moveStep.animateRotation)
+                    {
+                        objectLastRot[target] = Quaternion.Euler(moveStep.targetRotation);
+                    }
                 }
                 // Delay and CustomAction steps don't affect the path
             }
@@ -371,6 +403,7 @@ namespace TimelineSystem
             // Track per-object: current drawing position
             Dictionary<GameObject, Vector3> objectCurrentPos = new Dictionary<GameObject, Vector3>();
             Dictionary<GameObject, bool> objectHasStart = new Dictionary<GameObject, bool>();
+            Dictionary<GameObject, Quaternion> objectCurrentRot = new Dictionary<GameObject, Quaternion>();
 
             // Count enabled move steps for gradient calculation
             int enabledStepCount = 0;
@@ -394,6 +427,7 @@ namespace TimelineSystem
                         Vector3 startPos = target.transform.position;
                         objectCurrentPos[target] = startPos;
                         objectHasStart[target] = true;
+                        objectCurrentRot[target] = target.transform.rotation;
 
                         // Draw starting point indicator
                         if (useGradientColors && pathGradient != null)
@@ -409,6 +443,7 @@ namespace TimelineSystem
 
                     // Get current position for this object (last target or start)
                     Vector3 currentPos = objectCurrentPos[target];
+                    Quaternion currentRot = objectCurrentRot.ContainsKey(target) ? objectCurrentRot[target] : target.transform.rotation;
 
                     // Get target position
                     Vector3 targetPos = moveStep.targetPosition;
@@ -420,6 +455,8 @@ namespace TimelineSystem
                             ? target.transform.parent.TransformPoint(targetPos)
                             : targetPos;
                     }
+                    Quaternion targetRot = Quaternion.Euler(moveStep.targetRotation);
+                    Vector3 finalPos = targetPos;
 
                     // Calculate gradient color based on step progress
                     float t = enabledStepCount > 1 ? (float)stepIndex / (enabledStepCount - 1) : 0f;
@@ -434,16 +471,25 @@ namespace TimelineSystem
                     }
 
                     // Draw line from current position to target position
-                    Gizmos.DrawLine(currentPos, targetPos);
+                    Gizmos.DrawLine(currentPos, finalPos);
 
                     // Draw sphere at target
-                    Gizmos.DrawWireSphere(targetPos, 0.2f);
+                    Gizmos.DrawWireSphere(finalPos, 0.2f);
 
                     // Draw step-specific gizmo
+                    if (moveStep != null)
+                    {
+                        moveStep.SetPreviewTargetTransform(target.transform);
+                        moveStep.SetPreviewStartRotation(currentRot);
+                    }
                     step.DrawGizmos(currentPos);
 
                     // Update current position for this object
-                    objectCurrentPos[target] = targetPos;
+                    objectCurrentPos[target] = finalPos;
+                    if (moveStep.animateRotation)
+                    {
+                        objectCurrentRot[target] = targetRot;
+                    }
                     stepIndex++;
                 }
                 else if (step != null && step.enabled)

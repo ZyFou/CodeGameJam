@@ -15,6 +15,9 @@ namespace TimelineSystem
         [Header("Optional Rotation")]
         public bool animateRotation = false;
         public Vector3 targetRotation = Vector3.zero;
+        public EasingType rotationEasing = EasingType.Linear;
+        public Vector3 rotationPivotOffset = Vector3.zero;
+        [HideInInspector] public bool rotationPivotAffectsPosition = false;
 
         [Header("Optional Scale")]
         public bool animateScale = false;
@@ -22,10 +25,14 @@ namespace TimelineSystem
 
         // Internal state
         private Vector3 startPosition;
+        private Vector3 startPivotPosition;
         private Quaternion startRotation;
         private Vector3 startScale;
         private float elapsedTime;
         private Transform targetTransform;
+        [NonSerialized] private Quaternion previewStartRotation = Quaternion.identity;
+        [NonSerialized] private bool hasPreviewStartRotation = false;
+        [NonSerialized] private Transform previewTargetTransform;
 
         public MoveStep() : base(StepType.Move)
         {
@@ -42,6 +49,28 @@ namespace TimelineSystem
             startPosition = targetTransform.position;
             startRotation = targetTransform.rotation;
             startScale = targetTransform.localScale;
+            startPivotPosition = startPosition + (startRotation * rotationPivotOffset);
+        }
+
+        public void SetPreviewStartRotation(Quaternion rotation)
+        {
+            previewStartRotation = rotation;
+            hasPreviewStartRotation = true;
+        }
+
+        public void ClearPreviewStartRotation()
+        {
+            hasPreviewStartRotation = false;
+        }
+
+        public void SetPreviewTargetTransform(Transform target)
+        {
+            previewTargetTransform = target;
+        }
+
+        public void ClearPreviewTargetTransform()
+        {
+            previewTargetTransform = null;
         }
 
         public override bool Update(float deltaTime)
@@ -50,6 +79,8 @@ namespace TimelineSystem
 
             elapsedTime += deltaTime;
             float t = Mathf.Clamp01(elapsedTime / duration);
+
+            // Standard movement
             float easedT = Easing.Ease(t, easing);
 
             // Calculate target position in world space
@@ -59,20 +90,30 @@ namespace TimelineSystem
                 worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
             }
 
-            // Lerp position
-            targetTransform.position = Vector3.Lerp(startPosition, worldTargetPosition, easedT);
-
-            // Lerp rotation if enabled
+            Quaternion currentRotation = startRotation;
+            Quaternion targetQuat = startRotation;
             if (animateRotation)
             {
-                Quaternion targetQuat = Quaternion.Euler(targetRotation);
-                targetTransform.rotation = Quaternion.Lerp(startRotation, targetQuat, easedT);
+                float rotEasedT = Easing.Ease(t, rotationEasing);
+                targetQuat = Quaternion.Euler(targetRotation);
+                currentRotation = Quaternion.Lerp(startRotation, targetQuat, rotEasedT);
+                targetTransform.rotation = currentRotation;
             }
+
+            Vector3 basePosition = Vector3.Lerp(startPosition, worldTargetPosition, easedT);
+            if (animateRotation && rotationPivotOffset != Vector3.zero)
+            {
+                Vector3 pivotEnd = worldTargetPosition + (targetQuat * rotationPivotOffset);
+                Vector3 pivotPosition = Vector3.Lerp(startPivotPosition, pivotEnd, easedT);
+                basePosition = pivotPosition - (currentRotation * rotationPivotOffset);
+            }
+
+            targetTransform.position = basePosition;
 
             // Lerp scale if enabled
             if (animateScale)
             {
-                targetTransform.localScale = Vector3.Lerp(startScale, targetScale, easedT);
+                targetTransform.localScale = Vector3.Lerp(startScale, targetScale, t);
             }
 
             // Return true when complete
@@ -90,11 +131,15 @@ namespace TimelineSystem
                 worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
             }
 
-            targetTransform.position = worldTargetPosition;
-
             if (animateRotation)
             {
-                targetTransform.rotation = Quaternion.Euler(targetRotation);
+                Quaternion targetQuat = Quaternion.Euler(targetRotation);
+                targetTransform.rotation = targetQuat;
+                targetTransform.position = worldTargetPosition;
+            }
+            else
+            {
+                targetTransform.position = worldTargetPosition;
             }
 
             if (animateScale)
@@ -110,12 +155,8 @@ namespace TimelineSystem
 
         public override void DrawGizmos(Vector3 currentPosition)
         {
-            // Draw arrow indicating movement direction
-            Vector3 worldTarget = targetPosition;
-
-            // Note: In DrawGizmos we don't have access to targetTransform,
-            // so we can't properly convert local to world space here.
-            // The conversion is handled in TimelineRunner.OnDrawGizmos
+            // Draw standard movement arrow
+            Vector3 worldTarget = GetWorldTargetPosition();
 
             Vector3 direction = worldTarget - currentPosition;
             if (direction.magnitude > 0.1f)
@@ -132,6 +173,87 @@ namespace TimelineSystem
                 Gizmos.DrawLine(worldTarget, arrowPoint1);
                 Gizmos.DrawLine(worldTarget, arrowPoint2);
             }
+
+            if (animateRotation)
+            {
+                Quaternion startRotation = GetPreviewStartRotation();
+                Quaternion targetQuat = Quaternion.Euler(targetRotation);
+                Vector3 pivotStart = currentPosition + (startRotation * rotationPivotOffset);
+                Vector3 pivotEnd = worldTarget + (targetQuat * rotationPivotOffset);
+
+                Gizmos.DrawWireSphere(pivotStart, 0.15f);
+                Gizmos.DrawLine(currentPosition, pivotStart);
+
+                Vector3 axis = (startRotation * Vector3.up).normalized;
+                Gizmos.DrawLine(pivotStart - axis * 0.6f, pivotStart + axis * 0.6f);
+
+                if ((pivotEnd - pivotStart).sqrMagnitude > 0.0001f)
+                {
+                    Gizmos.DrawWireSphere(pivotEnd, 0.12f);
+                    Gizmos.DrawLine(pivotStart, pivotEnd);
+                }
+
+                if (rotationPivotOffset != Vector3.zero)
+                {
+                    Vector3 prev = pivotStart;
+                    const int segments = 24;
+                    for (int i = 1; i <= segments; i++)
+                    {
+                        float rawT = i / (float)segments;
+                        float moveT = Easing.Ease(rawT, easing);
+                        float rotT = Easing.Ease(rawT, rotationEasing);
+                        Quaternion rot = Quaternion.Lerp(startRotation, targetQuat, rotT);
+                        Vector3 pivotPos = Vector3.Lerp(pivotStart, pivotEnd, moveT);
+                        Vector3 next = pivotPos;
+                        Gizmos.DrawLine(prev, next);
+                        prev = next;
+                    }
+                }
+            }
+        }
+
+        private Quaternion GetPreviewStartRotation()
+        {
+            if (hasPreviewStartRotation)
+            {
+                return previewStartRotation;
+            }
+
+            Transform target = GetPreviewTargetTransform();
+            if (target != null)
+            {
+                return target.rotation;
+            }
+
+            return Quaternion.identity;
+        }
+
+        private Transform GetPreviewTargetTransform()
+        {
+            if (previewTargetTransform != null)
+            {
+                return previewTargetTransform;
+            }
+
+            if (targetObject != null)
+            {
+                return targetObject.transform;
+            }
+
+            return null;
+        }
+
+        private Vector3 GetWorldTargetPosition()
+        {
+            Vector3 worldTarget = targetPosition;
+            Transform target = GetPreviewTargetTransform();
+
+            if (space == SpaceType.Local && target != null && target.parent != null)
+            {
+                worldTarget = target.parent.TransformPoint(targetPosition);
+            }
+
+            return worldTarget;
         }
     }
 }
