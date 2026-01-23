@@ -47,6 +47,39 @@ public class RunManager : MonoBehaviour
             board.OnRoundEndedScore -= HandleRoundEnded;
     }
 
+    void Update()
+    {
+        // Mettre à jour le HUD en temps réel pendant le round
+        if (state == RunState.InRound && board != null && hud != null)
+        {
+            RefreshHUDDuringRound();
+        }
+    }
+
+    void RefreshHUDDuringRound()
+    {
+        int currentScore = board.GetCurrentScore();
+        int comboCount = board.GetComboCount();
+        float comboMultiplier = board.GetComboMultiplier();
+
+        hud.SetState(
+            currentScore,           // score (en temps réel)
+            comboCount,             // comboCount (en temps réel)
+            comboMultiplier,        // comboMultiplier (en temps réel)
+            tourIndex,              // tour
+            roundInTour,            // round
+            rules.roundsPerTour,    // roundsPerTour
+            money,                  // money
+            tickets,                // tickets
+            GetEntryCost(),         // roundCost
+            0,                      // debtRemaining (pas encore implémenté)
+            0,                      // debtTotal (pas encore implémenté)
+            0,                      // depositedThisTour (pas encore implémenté)
+            tourBonusPool,          // ticketReward
+            ""                      // message (vide pendant le round)
+        );
+    }
+
     // appelé par le bouton unique
     public void PressStandButton()
     {
@@ -241,7 +274,7 @@ public class RunManager : MonoBehaviour
     {
         InsertMoney(GetWantedInsertAmount());
     }
-    
+
     public void TryPayEntryAndStartRound()
     {
         // Si ton RunManager a déjà une méthode genre PressStandButton() ou PayAndStartRound()

@@ -7,6 +7,8 @@ public class HUDController : MonoBehaviour
     public TextMeshPro scoreText; // TEXT_Score
     public TextMeshPro comboText; // TEXT_Combo
     public TextMeshPro tourRoundText; // TXT_TourRound
+    public TextMeshPro tourCountText; // TXT_TourCount
+    public TextMeshPro comboMultiplierText; // TXT_ComboMultiplier
 
     public TextMeshPro moneyText; // TXT_Money
     public TextMeshPro ticketsText; // TXT_Ticket
@@ -44,12 +46,16 @@ public class HUDController : MonoBehaviour
         if (scoreText)
             scoreText.text = $"{score}";
         if (comboText)
-            comboText.text = $"{comboCount} | Mult: x{comboMultiplier:0.0}";
+            comboText.text = $"{comboCount}";
         if (tourRoundText)
-            tourRoundText.text = $"Tour {tour} — Round {round}/{roundsPerTour}";
+            tourRoundText.text = $"{tour}/{round}";
+        if (tourCountText)
+            tourCountText.text = $"{tour}";
+        if (comboMultiplierText)
+            comboMultiplierText.text = $"{comboMultiplier:0.0}";
 
         if (moneyText)
-            moneyText.text = $"{money}€";
+            moneyText.text = $"{money}";
         if (ticketsText)
             ticketsText.text = $"{tickets}";
 
@@ -57,9 +63,9 @@ public class HUDController : MonoBehaviour
             roundCostText.text = $"{roundCost}";
 
         if (debtText)
-            debtText.text = $"{debtTotal}€"; //
+            debtText.text = $"{debtTotal}";
         if (depositedText)
-            depositedText.text = $"{depositedThisTour}€";
+            depositedText.text = $"{depositedThisTour}";
         if (ticketRewardText)
             ticketRewardText.text = $"{ticketReward}";
 

@@ -362,4 +362,22 @@ public class BoardManager : MonoBehaviour
         comboErrors = 0;
         comboExpireAt = 0f;
     }
+
+    // -------------------------
+    // PUBLIC GETTERS pour HUD
+    // -------------------------
+    public int GetCurrentScore() => score;
+    
+    public int GetComboCount() => comboStack;
+    
+    public float GetComboMultiplier()
+    {
+        if (!IsComboUnlocked() || comboStack == 0)
+            return 1.0f;
+        
+        if (rules.useMultiplier)
+            return 1f + comboStack * rules.comboMultiplierStep;
+        else
+            return 1.0f; // Si pas de multiplicateur, retourne 1.0
+    }
 }
