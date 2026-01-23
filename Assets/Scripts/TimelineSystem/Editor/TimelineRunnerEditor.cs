@@ -8,6 +8,35 @@ namespace TimelineSystem
     [CustomEditor(typeof(TimelineRunner))]
     public class TimelineRunnerEditor : Editor
     {
+        private enum EaseFamily
+        {
+            Linear,
+            In,
+            Out,
+            InOut,
+            Bounce,
+            Elastic,
+            Back,
+            Shake
+        }
+
+        private enum EaseCurve
+        {
+            Quad,
+            Cubic,
+            Quart,
+            Sine,
+            Expo,
+            Circ
+        }
+
+        private enum EaseDirection
+        {
+            In,
+            Out,
+            InOut
+        }
+
         private ReorderableList stepsList;
         private TimelineRunner timelineRunner;
         private SerializedProperty stepsProperty;
@@ -240,8 +269,35 @@ namespace TimelineSystem
                 currentY += lineHeight + spacing;
 
                 Rect easingRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                moveStep.easing = (EasingType)EditorGUI.EnumPopup(easingRect, "Easing", moveStep.easing);
+                moveStep.easing = DrawEasingSelector(easingRect, "Easing", moveStep.easing, false);
                 currentY += lineHeight + spacing;
+
+                Rect easePreviewRect = new Rect(x + 15, currentY, width - 20, lineHeight * 2f);
+                DrawEasingPreview(easePreviewRect, moveStep.easing);
+                currentY += easePreviewRect.height + spacing;
+
+                Rect shakeToggleRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                moveStep.useShake = EditorGUI.Toggle(shakeToggleRect, "Use Shake", moveStep.useShake);
+                currentY += lineHeight + spacing;
+
+                if (moveStep.useShake)
+                {
+                    Rect shakeIntensityRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.shakeIntensity = EditorGUI.Slider(shakeIntensityRect, "Shake Intensity", moveStep.shakeIntensity, 0f, 1f);
+                    currentY += lineHeight + spacing;
+
+                    Rect shakeAmplitudeRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.shakeAmplitude = EditorGUI.FloatField(shakeAmplitudeRect, "Max Amplitude", moveStep.shakeAmplitude);
+                    currentY += lineHeight + spacing;
+
+                    Rect shakeFrequencyRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.shakeFrequency = EditorGUI.FloatField(shakeFrequencyRect, "Shake Frequency", moveStep.shakeFrequency);
+                    currentY += lineHeight + spacing;
+
+                    Rect shakeAxisRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                    moveStep.shakeAxis = EditorGUI.Vector3Field(shakeAxisRect, "Shake Axis", moveStep.shakeAxis);
+                    currentY += lineHeight + spacing;
+                }
 
                 Rect animRotRect = new Rect(x + 15, currentY, width - 20, lineHeight);
                 moveStep.animateRotation = EditorGUI.Toggle(animRotRect, "Animate Rotation", moveStep.animateRotation);
@@ -254,8 +310,12 @@ namespace TimelineSystem
                     currentY += lineHeight + spacing;
 
                     Rect rotEasingRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.rotationEasing = (EasingType)EditorGUI.EnumPopup(rotEasingRect, "Rotation Easing", moveStep.rotationEasing);
+                    moveStep.rotationEasing = DrawEasingSelector(rotEasingRect, "Rotation Easing", moveStep.rotationEasing, false);
                     currentY += lineHeight + spacing;
+
+                    Rect rotPreviewRect = new Rect(x + 15, currentY, width - 20, lineHeight * 2f);
+                    DrawEasingPreview(rotPreviewRect, moveStep.rotationEasing);
+                    currentY += rotPreviewRect.height + spacing;
 
                     Rect rotPivotRect = new Rect(x + 15, currentY, width - 20, lineHeight);
                     moveStep.rotationPivotOffset = EditorGUI.Vector3Field(rotPivotRect, "Rotation Pivot Offset", moveStep.rotationPivotOffset);
@@ -308,8 +368,11 @@ namespace TimelineSystem
 
             if (step is MoveStep moveStep)
             {
-                height += lineHeight * 6; // position, space, duration, easing, animRot toggle, animScale toggle
-                if (moveStep.animateRotation) height += lineHeight * 3; // targetRotation + rotationEasing + rotationPivotOffset
+                float previewHeight = lineHeight * 2f;
+                height += lineHeight * 6 + previewHeight; // position, space, duration, easing, preview, animRot, animScale
+                height += lineHeight; // shake toggle
+                if (moveStep.useShake) height += lineHeight * 4; // shake params
+                if (moveStep.animateRotation) height += lineHeight * 3 + previewHeight; // targetRotation + rotationEasing + preview + rotationPivotOffset
                 if (moveStep.animateScale) height += lineHeight;
             }
             else if (step is DelayStep)
@@ -323,6 +386,210 @@ namespace TimelineSystem
             }
 
             return height;
+        }
+
+        private EasingType DrawEasingSelector(Rect rect, string label, EasingType current, bool allowShake)
+        {
+            DecodeEasing(current, out EaseFamily family, out EaseCurve curve, out EaseDirection direction);
+
+            if (!allowShake && family == EaseFamily.Shake)
+            {
+                family = EaseFamily.Linear;
+            }
+
+            Rect contentRect = EditorGUI.PrefixLabel(rect, new GUIContent(label));
+            float halfWidth = (contentRect.width - 4f) * 0.5f;
+            Rect leftRect = new Rect(contentRect.x, contentRect.y, halfWidth, contentRect.height);
+            Rect rightRect = new Rect(contentRect.x + halfWidth + 4f, contentRect.y, halfWidth, contentRect.height);
+
+            family = (EaseFamily)EditorGUI.EnumPopup(leftRect, family);
+
+            if (family == EaseFamily.Linear)
+            {
+                return EasingType.Linear;
+            }
+
+            if (family == EaseFamily.Shake)
+            {
+                return allowShake ? EasingType.Shake : EasingType.Linear;
+            }
+
+            if (family == EaseFamily.Bounce || family == EaseFamily.Elastic || family == EaseFamily.Back)
+            {
+                direction = (EaseDirection)EditorGUI.EnumPopup(rightRect, direction);
+                return MapSpecialEasing(family, direction);
+            }
+
+            curve = (EaseCurve)EditorGUI.EnumPopup(rightRect, curve);
+            EaseDirection easeDirection = FamilyToDirection(family);
+            return MapStandardEasing(easeDirection, curve);
+        }
+
+        private void DrawEasingPreview(Rect rect, EasingType type)
+        {
+            EditorGUI.DrawRect(rect, new Color(0.12f, 0.12f, 0.12f, 1f));
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 1f), new Color(0.25f, 0.25f, 0.25f, 1f));
+            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), new Color(0.25f, 0.25f, 0.25f, 1f));
+
+            const int samples = 32;
+            Vector3 prev = Vector3.zero;
+            for (int i = 0; i <= samples; i++)
+            {
+                float t = i / (float)samples;
+                float eased = Mathf.Clamp01(Easing.Ease(t, type));
+                float x = Mathf.Lerp(rect.x + 2f, rect.xMax - 2f, t);
+                float y = Mathf.Lerp(rect.yMax - 2f, rect.y + 2f, eased);
+                Vector3 point = new Vector3(x, y, 0f);
+
+                if (i > 0)
+                {
+                    Handles.color = new Color(0.6f, 0.9f, 1f, 1f);
+                    Handles.DrawAAPolyLine(2f, prev, point);
+                }
+
+                prev = point;
+            }
+
+            if (type == EasingType.Shake)
+            {
+                EditorGUI.LabelField(rect, "Shake", EditorStyles.centeredGreyMiniLabel);
+            }
+        }
+
+        private void DecodeEasing(EasingType type, out EaseFamily family, out EaseCurve curve, out EaseDirection direction)
+        {
+            family = EaseFamily.Linear;
+            curve = EaseCurve.Quad;
+            direction = EaseDirection.InOut;
+
+            switch (type)
+            {
+                case EasingType.Linear:
+                    family = EaseFamily.Linear;
+                    return;
+                case EasingType.Shake:
+                    family = EaseFamily.Shake;
+                    return;
+                case EasingType.EaseInQuad:
+                    family = EaseFamily.In; curve = EaseCurve.Quad; direction = EaseDirection.In; return;
+                case EasingType.EaseOutQuad:
+                    family = EaseFamily.Out; curve = EaseCurve.Quad; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutQuad:
+                    family = EaseFamily.InOut; curve = EaseCurve.Quad; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInCubic:
+                    family = EaseFamily.In; curve = EaseCurve.Cubic; direction = EaseDirection.In; return;
+                case EasingType.EaseOutCubic:
+                    family = EaseFamily.Out; curve = EaseCurve.Cubic; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutCubic:
+                    family = EaseFamily.InOut; curve = EaseCurve.Cubic; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInQuart:
+                    family = EaseFamily.In; curve = EaseCurve.Quart; direction = EaseDirection.In; return;
+                case EasingType.EaseOutQuart:
+                    family = EaseFamily.Out; curve = EaseCurve.Quart; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutQuart:
+                    family = EaseFamily.InOut; curve = EaseCurve.Quart; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInSine:
+                    family = EaseFamily.In; curve = EaseCurve.Sine; direction = EaseDirection.In; return;
+                case EasingType.EaseOutSine:
+                    family = EaseFamily.Out; curve = EaseCurve.Sine; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutSine:
+                    family = EaseFamily.InOut; curve = EaseCurve.Sine; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInExpo:
+                    family = EaseFamily.In; curve = EaseCurve.Expo; direction = EaseDirection.In; return;
+                case EasingType.EaseOutExpo:
+                    family = EaseFamily.Out; curve = EaseCurve.Expo; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutExpo:
+                    family = EaseFamily.InOut; curve = EaseCurve.Expo; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInCirc:
+                    family = EaseFamily.In; curve = EaseCurve.Circ; direction = EaseDirection.In; return;
+                case EasingType.EaseOutCirc:
+                    family = EaseFamily.Out; curve = EaseCurve.Circ; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutCirc:
+                    family = EaseFamily.InOut; curve = EaseCurve.Circ; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInBack:
+                    family = EaseFamily.Back; direction = EaseDirection.In; return;
+                case EasingType.EaseOutBack:
+                    family = EaseFamily.Back; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutBack:
+                    family = EaseFamily.Back; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInElastic:
+                    family = EaseFamily.Elastic; direction = EaseDirection.In; return;
+                case EasingType.EaseOutElastic:
+                    family = EaseFamily.Elastic; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutElastic:
+                    family = EaseFamily.Elastic; direction = EaseDirection.InOut; return;
+                case EasingType.EaseInBounce:
+                    family = EaseFamily.Bounce; direction = EaseDirection.In; return;
+                case EasingType.EaseOutBounce:
+                    family = EaseFamily.Bounce; direction = EaseDirection.Out; return;
+                case EasingType.EaseInOutBounce:
+                    family = EaseFamily.Bounce; direction = EaseDirection.InOut; return;
+            }
+        }
+
+        private EaseDirection FamilyToDirection(EaseFamily family)
+        {
+            switch (family)
+            {
+                case EaseFamily.In: return EaseDirection.In;
+                case EaseFamily.Out: return EaseDirection.Out;
+                case EaseFamily.InOut: return EaseDirection.InOut;
+                default: return EaseDirection.InOut;
+            }
+        }
+
+        private EasingType MapStandardEasing(EaseDirection direction, EaseCurve curve)
+        {
+            switch (curve)
+            {
+                case EaseCurve.Quad:
+                    return direction == EaseDirection.In ? EasingType.EaseInQuad
+                        : direction == EaseDirection.Out ? EasingType.EaseOutQuad
+                        : EasingType.EaseInOutQuad;
+                case EaseCurve.Cubic:
+                    return direction == EaseDirection.In ? EasingType.EaseInCubic
+                        : direction == EaseDirection.Out ? EasingType.EaseOutCubic
+                        : EasingType.EaseInOutCubic;
+                case EaseCurve.Quart:
+                    return direction == EaseDirection.In ? EasingType.EaseInQuart
+                        : direction == EaseDirection.Out ? EasingType.EaseOutQuart
+                        : EasingType.EaseInOutQuart;
+                case EaseCurve.Sine:
+                    return direction == EaseDirection.In ? EasingType.EaseInSine
+                        : direction == EaseDirection.Out ? EasingType.EaseOutSine
+                        : EasingType.EaseInOutSine;
+                case EaseCurve.Expo:
+                    return direction == EaseDirection.In ? EasingType.EaseInExpo
+                        : direction == EaseDirection.Out ? EasingType.EaseOutExpo
+                        : EasingType.EaseInOutExpo;
+                case EaseCurve.Circ:
+                    return direction == EaseDirection.In ? EasingType.EaseInCirc
+                        : direction == EaseDirection.Out ? EasingType.EaseOutCirc
+                        : EasingType.EaseInOutCirc;
+                default:
+                    return EasingType.Linear;
+            }
+        }
+
+        private EasingType MapSpecialEasing(EaseFamily family, EaseDirection direction)
+        {
+            switch (family)
+            {
+                case EaseFamily.Back:
+                    return direction == EaseDirection.In ? EasingType.EaseInBack
+                        : direction == EaseDirection.Out ? EasingType.EaseOutBack
+                        : EasingType.EaseInOutBack;
+                case EaseFamily.Elastic:
+                    return direction == EaseDirection.In ? EasingType.EaseInElastic
+                        : direction == EaseDirection.Out ? EasingType.EaseOutElastic
+                        : EasingType.EaseInOutElastic;
+                case EaseFamily.Bounce:
+                    return direction == EaseDirection.In ? EasingType.EaseInBounce
+                        : direction == EaseDirection.Out ? EasingType.EaseOutBounce
+                        : EasingType.EaseInOutBounce;
+                default:
+                    return EasingType.Linear;
+            }
         }
 
         private void AddStep(StepType type)
