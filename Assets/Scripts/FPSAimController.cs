@@ -9,17 +9,17 @@ public class FPSAimController : MonoBehaviour
     public Camera cam;
 
     [Header("Look")]
-    public float sensitivity = 0.12f;
+    public float sensitivity = 120f;   // recommandé avec Time.deltaTime
     public float pitchMin = -80f;
     public float pitchMax = 80f;
 
     [Header("Invert Axis")]
-    public bool invertX = false;  // gauche / droite
-    public bool invertY = false;  // haut / bas
+    public bool invertX = false;
+    public bool invertY = false;
 
     [Header("Raycast")]
     public float maxDistance = 5f;
-    public LayerMask interactMask = ~0;
+    public LayerMask interactMask; // met Interactable ici
 
     float yaw;
     float pitch;
@@ -28,21 +28,30 @@ public class FPSAimController : MonoBehaviour
     {
         if (cam == null) cam = Camera.main;
         if (yawRoot == null) yawRoot = transform;
-        if (pitchRoot == null) pitchRoot = cam.transform;
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        yaw = yawRoot.localEulerAngles.y;
+
+        if (pitchRoot != null)
+        {
+            pitch = pitchRoot.localEulerAngles.x;
+            if (pitch > 180f) pitch -= 360f;
+        }
     }
 
     void Update()
     {
+        if (Mouse.current == null) return;
+
         Look();
         HandleClick();
     }
 
     void Look()
     {
-        Vector2 delta = Mouse.current.delta.ReadValue() * sensitivity;
+        Vector2 delta = Mouse.current.delta.ReadValue() * sensitivity * Time.deltaTime;
 
         float x = delta.x * (invertX ? -1f : 1f);
         float y = delta.y * (invertY ? -1f : 1f);
@@ -52,21 +61,23 @@ public class FPSAimController : MonoBehaviour
         pitch = Mathf.Clamp(pitch, pitchMin, pitchMax);
 
         yawRoot.localRotation = Quaternion.Euler(0f, yaw, 0f);
-        pitchRoot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+        if (pitchRoot != null)
+            pitchRoot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 
     void HandleClick()
     {
+        if (!Mouse.current.leftButton.wasPressedThisFrame) return;
+
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         Debug.DrawRay(ray.origin, ray.direction * maxDistance, Color.green);
 
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, interactMask))
         {
-            if (Mouse.current.leftButton.wasPressedThisFrame)
+            var clickable = hit.collider.GetComponentInParent<IClickable>();
+            if (clickable != null)
             {
-                var clickable = hit.collider.GetComponentInParent<ClickableTarget>();
-                if (clickable != null)
-                    clickable.Click();
+                clickable.Click(new ClickContext { cam = cam, hit = hit, ray = ray });
             }
         }
     }
