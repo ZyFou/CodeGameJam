@@ -10,6 +10,9 @@ public class BoardManager : MonoBehaviour
     [Header("Board (drag & drop in order)")]
     [SerializeField] private List<ArcadeButton> buttons = new();
 
+    // NEW: event fin de round pour RunManager (score final)
+    public System.Action<int> OnRoundEndedScore;
+
     [Header("Debug")]
     public bool playOnStart = true;
 
@@ -96,7 +99,8 @@ public class BoardManager : MonoBehaviour
         {
             if (rt[i].isOn && rt[i].kind == ButtonKind.Green && rt[i].yellowAt > 0f && t >= rt[i].yellowAt)
             {
-                SetButton(i, ButtonKind.Yellow, true);
+                // IMPORTANT: on garde isOn=true, mais on change juste la kind
+                SetButton(i, ButtonKind.Yellow, true, 0f);
             }
         }
 
@@ -148,8 +152,11 @@ public class BoardManager : MonoBehaviour
     void EndRound()
     {
         roundRunning = false;
+
         Debug.Log($"Round ended. Score={score}, BlackStrikes={blackStrikes}, ComboStack={comboStack}");
-        // brancher ici plus tard: score->argent, tickets, UI, etc.
+
+        // NEW: notifier le RunManager
+        OnRoundEndedScore?.Invoke(score);
     }
 
     // -------------------------
@@ -258,22 +265,25 @@ public class BoardManager : MonoBehaviour
         if (intendedKind == ButtonKind.Neutral && !rules.allowNeutralOn)
             return;
 
-        // Tous les boutons normaux (Green/Yellow) commencent toujours en Green
-        // On track quand ils doivent passer en Yellow
+        // Gestion Green->Yellow:
+        // - si on a roll Yellow, on spawn en Green et transition en Yellow à mi-temps
+        // - si on a roll Green, on peut aussi transition en Yellow à mi-temps (comme ton idée)
         ButtonKind spawnKind = intendedKind;
         float yellowAt = 0f;
-        
+
         if (intendedKind == ButtonKind.Yellow)
         {
-            // Ce bouton devrait être Yellow, mais on le spawn en Green
-            // Il passera automatiquement en Yellow après la moitié du temps
             spawnKind = ButtonKind.Green;
             yellowAt = Time.time + (rules.onLifetime * 0.5f);
         }
         else if (intendedKind == ButtonKind.Green)
         {
-            // Les boutons Green passent aussi en Yellow après la moitié du temps
             yellowAt = Time.time + (rules.onLifetime * 0.5f);
+        }
+        else
+        {
+            // black / neutral: pas de transition
+            yellowAt = 0f;
         }
 
         SetButton(idx, spawnKind, true, yellowAt);
@@ -284,10 +294,10 @@ public class BoardManager : MonoBehaviour
     {
         bool blackAllowed = rules.allowBlack && (currentTourIndex >= rules.blackUnlockTour);
 
-        int wGreen  = rules.allowGreen ? rules.weightGreen : 0;
-        int wYellow = rules.allowYellow ? rules.weightYellow : 0;
+        int wGreen   = rules.allowGreen ? rules.weightGreen : 0;
+        int wYellow  = rules.allowYellow ? rules.weightYellow : 0;
         int wNeutral = rules.allowNeutralOn ? rules.weightNeutral : 0;
-        int wBlack  = blackAllowed ? rules.weightBlackAfterUnlock : 0;
+        int wBlack   = blackAllowed ? rules.weightBlackAfterUnlock : 0;
 
         int total = wGreen + wYellow + wNeutral + wBlack;
         if (total <= 0) return ButtonKind.Neutral;

@@ -9,6 +9,9 @@ public class RuleSetSO : ScriptableObject
     [Header("Tour / Round structure")]
     public int roundsPerTour = 3; // par défaut: 1 tour = 3 rounds
 
+    // -----------------------
+    // ROUND GAMEPLAY
+    // -----------------------
     [Header("Round")]
     public float roundDuration = 30f;
     public float spawnInterval = 1f;
@@ -65,4 +68,35 @@ public class RuleSetSO : ScriptableObject
 
     [Tooltip("Compter un clic sur un bouton OFF comme une erreur combo ?")]
     public bool countOffClickAsComboError = true;
+
+    // -----------------------
+    // ECONOMY
+    // -----------------------
+    [Header("Economy - Start")]
+    public int startMoney = 10;
+    public int startTickets = 2;
+
+    [Header("Economy - Entry cost")]
+    [Tooltip("Coût d'entrée par round dans le tour (index 0=round1). Ex: 5/12/20")]
+    public int[] entryCostBaseByRoundInTour = new int[] { 5, 12, 20 };
+
+    [Tooltip("Augmentation ajoutée à TOUS les coûts à chaque tour passé. Ex: +3 => Tour2 = base+3")]
+    public int entryCostAddPerTour = 3;
+
+    [Header("Economy - Score -> Money")]
+    [Tooltip("moneyGain = floor(score / scoreToMoneyK)")]
+    public int scoreToMoneyK = 10;
+
+    // -----------------------
+    // TICKETS
+    // -----------------------
+    [Header("Tickets - per played round")]
+    public int ticketsPerPlayedRound = 1; // +1 ticket à la fin d'un round joué
+
+    [Header("Tour bonus ticket pool")]
+    [Tooltip("Pool de tickets au début du tour (ex 6)")]
+    public int tourBonusTicketsStart = 6;
+
+    [Tooltip("Combien le pool baisse par round consommé (joué OU skip). Ex 2 => 6/4/2/0")]
+    public int tourBonusTicketsDecayPerRound = 2;
 }
