@@ -10,8 +10,8 @@ public class HUDController : MonoBehaviour
     public TextMeshPro tourCountText; // TXT_TourCount
     public TextMeshPro comboMultiplierText; // TXT_ComboMultiplier
 
-    public TextMeshPro moneyText; // TXT_Money
-    public TextMeshPro ticketsText; // TXT_Ticket
+    public TMP_Text moneyText;
+    public TMP_Text ticketsText;
 
     public TextMeshPro roundCostText; // TXT_RoundCost
 
