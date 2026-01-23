@@ -42,26 +42,26 @@ public class HUDController : MonoBehaviour
     )
     {
         if (scoreText)
-            scoreText.text = $"Score: {score}";
+            scoreText.text = $"{score}";
         if (comboText)
-            comboText.text = $"Combo: {comboCount} | Mult: x{comboMultiplier:0.0}";
+            comboText.text = $"{comboCount} | Mult: x{comboMultiplier:0.0}";
         if (tourRoundText)
             tourRoundText.text = $"Tour {tour} — Round {round}/{roundsPerTour}";
 
         if (moneyText)
-            moneyText.text = $"Money: {money}€";
+            moneyText.text = $"{money}€";
         if (ticketsText)
-            ticketsText.text = $"Tickets: {tickets}";
+            ticketsText.text = $"{tickets}";
 
         if (roundCostText)
-            roundCostText.text = $"Round cost: {roundCost}€";
+            roundCostText.text = $"{roundCost}";
 
         if (debtText)
-            debtText.text = $"Debt: {debtRemaining}€ / {debtTotal}€";
+            debtText.text = $"{debtTotal}€"; //
         if (depositedText)
-            depositedText.text = $"Deposited: {depositedThisTour}€";
+            depositedText.text = $"{depositedThisTour}€";
         if (ticketRewardText)
-            ticketRewardText.text = $"Ticket reward: +{ticketReward}";
+            ticketRewardText.text = $"{ticketReward}";
 
         if (messageText)
             messageText.text = message;
