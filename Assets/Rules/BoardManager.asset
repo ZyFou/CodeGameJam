@@ -12,10 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fc4e450c3e04064cb09544972a8e4bd, type: 3}
   m_Name: BoardManager
   m_EditorClassIdentifier: Assembly-CSharp::RuleSetSO
+  roundsPerTour: 3
   roundDuration: 30
   spawnInterval: 1
   onLifetime: 5
   maxOnAtOnce: 6
+  spawnChance: 0.6
+  allowGreen: 1
+  allowYellow: 1
+  allowNeutralOn: 0
+  allowBlack: 1
   weightGreen: 60
   weightYellow: 40
   weightNeutral: 10
@@ -24,5 +30,22 @@ MonoBehaviour:
   pointsGreen: 3
   pointsYellow: 2
   pointsNeutral: 0
-  blackMoneyPenalty: 5
-  blackStrikesToLoseTourGains: 3
+  comboEnabled: 1
+  comboUnlockTour: 2
+  comboUnlockRoundInTour: 1
+  comboStartAfterGreens: 3
+  comboMaxStack: 20
+  comboBonusPerGreen: 1
+  useMultiplier: 0
+  comboMultiplierStep: 0.1
+  comboExpireSeconds: 1.5
+  comboResetAfterErrors: 1
+  countOffClickAsComboError: 1
+  startMoney: 10
+  startTickets: 2
+  entryCostBaseByRoundInTour: 050000000c00000014000000
+  entryCostAddPerTour: 3
+  scoreToMoneyK: 10
+  ticketsPerPlayedRound: 1
+  tourBonusTicketsStart: 6
+  tourBonusTicketsDecayPerRound: 2

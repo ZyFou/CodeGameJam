@@ -14,7 +14,7 @@ public class BoardManager : MonoBehaviour
     public System.Action<int> OnRoundEndedScore;
 
     [Header("Debug")]
-    public bool playOnStart = true;
+    public bool playOnStart = false;
 
     [Tooltip("Tour courant (1 tour = rules.roundsPerTour rounds)")]
     public int currentTourIndex = 1;
@@ -361,5 +361,23 @@ public class BoardManager : MonoBehaviour
         comboStack = 0;
         comboErrors = 0;
         comboExpireAt = 0f;
+    }
+
+    // -------------------------
+    // PUBLIC GETTERS pour HUD
+    // -------------------------
+    public int GetCurrentScore() => score;
+    
+    public int GetComboCount() => comboStack;
+    
+    public float GetComboMultiplier()
+    {
+        if (!IsComboUnlocked() || comboStack == 0)
+            return 1.0f;
+        
+        if (rules.useMultiplier)
+            return 1f + comboStack * rules.comboMultiplierStep;
+        else
+            return 1.0f; // Si pas de multiplicateur, retourne 1.0
     }
 }

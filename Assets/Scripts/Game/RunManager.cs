@@ -35,6 +35,11 @@ public class RunManager : MonoBehaviour
     public int tourBonusPool;
     public int lastRoundScore;
 
+    public int roundsPlayedThisTour;
+    public int debtTotal;
+    public int debtRemaining;
+    public int depositedThisTour;
+
     void OnEnable()
     {
         if (board != null)
@@ -45,6 +50,39 @@ public class RunManager : MonoBehaviour
     {
         if (board != null)
             board.OnRoundEndedScore -= HandleRoundEnded;
+    }
+
+    void Update()
+    {
+        // Mettre à jour le HUD en temps réel pendant le round
+        if (state == RunState.InRound && board != null && hud != null)
+        {
+            RefreshHUDDuringRound();
+        }
+    }
+
+    void RefreshHUDDuringRound()
+    {
+        int currentScore = board.GetCurrentScore();
+        int comboCount = board.GetComboCount();
+        float comboMultiplier = board.GetComboMultiplier();
+
+        hud.SetState(
+            currentScore,           // score (en temps réel)
+            comboCount,             // comboCount (en temps réel)
+            comboMultiplier,        // comboMultiplier (en temps réel)
+            tourIndex,              // tour
+            roundInTour,            // round
+            rules.roundsPerTour,    // roundsPerTour
+            money,                  // money
+            tickets,                // tickets
+            GetEntryCost(),         // roundCost
+            debtRemaining,          // debtRemaining
+            debtTotal,              // debtTotal
+            depositedThisTour,      // depositedThisTour
+            tourBonusPool,          // ticketReward
+            ""                      // message (vide pendant le round)
+        );
     }
 
     // appelé par le bouton unique
@@ -91,10 +129,23 @@ public class RunManager : MonoBehaviour
         RefreshHUD("Appuie sur le bouton du stand pour payer et lancer le round.");
     }
 
+    void StartRunIfNeeded()
+    {
+        if (state != RunState.Idle)
+            return;
+
+        StartRun();
+    }
+
     void StartTour()
     {
         tourBonusPool = rules.tourBonusTicketsStart;
         roundInTour = 1;
+
+        debtTotal = rules.debtStart + (tourIndex - 1) * rules.debtAddPerTour;
+        debtRemaining = debtTotal;
+        depositedThisTour = 0;
+        roundsPlayedThisTour = 0;
     }
 
     int GetEntryCost()
@@ -143,8 +194,19 @@ public class RunManager : MonoBehaviour
         // +1 ticket par round terminé (toujours)
         tickets += rules.ticketsPerPlayedRound;
 
+        roundsPlayedThisTour++;
+
         // avancer round
         roundInTour++;
+
+        if (roundsPlayedThisTour >= rules.roundsPerTour && debtRemaining > 0)
+        {
+            state = RunState.GameOver;
+            RefreshHUD(
+                $"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. Dette non remboursée."
+            );
+            return;
+        }
 
         // fin de tour ?
         if (roundInTour > rules.roundsPerTour)
@@ -176,15 +238,20 @@ public class RunManager : MonoBehaviour
         if (hud != null)
         {
             hud.SetState(
-                money,
-                tickets,
-                tourIndex,
-                roundInTour,
-                rules.roundsPerTour,
-                GetEntryCost(),
-                tourBonusPool,
-                lastRoundScore,
-                msg
+                lastRoundScore,        // score
+                0,                     // comboCount (pas encore implémenté)
+                1.0f,                  // comboMultiplier (pas encore implémenté)
+                tourIndex,             // tour
+                roundInTour,           // round
+                rules.roundsPerTour,   // roundsPerTour
+                money,                 // money
+                tickets,               // tickets
+                GetEntryCost(),        // roundCost
+                debtRemaining,         // debtRemaining
+                debtTotal,             // debtTotal
+                depositedThisTour,     // depositedThisTour
+                tourBonusPool,         // ticketReward
+                msg                    // message
             );
         }
         Debug.Log("[RUN] " + msg);
@@ -235,5 +302,71 @@ public class RunManager : MonoBehaviour
     public void PressInsertButton()
     {
         InsertMoney(GetWantedInsertAmount());
+    }
+
+    public void TryPayEntryAndStartRound()
+    {
+        if (state == RunState.Idle)
+        {
+            StartRun();
+            return;
+        }
+
+        PressStandButton();
+    }
+
+    public void DepositToDebt()
+    {
+        StartRunIfNeeded();
+
+        if (state == RunState.InRound)
+        {
+            hud?.SetMessage("Round en cours...");
+            return;
+        }
+
+        if (state == RunState.GameOver)
+        {
+            hud?.SetMessage("Game Over. Relance la scène ou ajoute un bouton Restart.");
+            return;
+        }
+
+        int step = rules.depositStepPerTour * tourIndex;
+        int deposit = Mathf.Min(step, Mathf.Min(money, debtRemaining));
+
+        if (deposit <= 0)
+        {
+            RefreshHUD("Aucun dépôt possible.");
+            return;
+        }
+
+        money -= deposit;
+        debtRemaining -= deposit;
+        depositedThisTour = debtTotal - debtRemaining;
+
+        if (debtRemaining == 0)
+        {
+            int bonus = GetDebtTicketRewardPreview();
+            tickets += bonus;
+
+            tourIndex++;
+            StartTour();
+            state = RunState.WaitingToPay;
+            RefreshHUD($"Dette remboursée: +{bonus} tickets bonus. Nouveau tour.");
+            return;
+        }
+
+        RefreshHUD($"Dépôt dette: -{deposit}€ (reste {debtRemaining}€).");
+    }
+
+    int GetDebtTicketRewardPreview()
+    {
+        if (roundsPlayedThisTour <= 1)
+            return 6;
+        if (roundsPlayedThisTour == 2)
+            return 4;
+        if (roundsPlayedThisTour == 3)
+            return 2;
+        return 0;
     }
 }

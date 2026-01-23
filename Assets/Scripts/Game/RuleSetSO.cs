@@ -87,6 +87,16 @@ public class RuleSetSO : ScriptableObject
     [Tooltip("moneyGain = floor(score / scoreToMoneyK)")]
     public int scoreToMoneyK = 10;
 
+    [Header("Economy - Debt per tour")]
+    [Tooltip("Dette initiale au tour 1")]
+    public int debtStart = 10;
+
+    [Tooltip("Augmentation de la dette par tour")]
+    public int debtAddPerTour = 5;
+
+    [Tooltip("Montant de dépôt par tour (step * tourIndex)")]
+    public int depositStepPerTour = 5;
+
     // -----------------------
     // TICKETS
     // -----------------------
