@@ -126,7 +126,7 @@ namespace TimelineSystem
                 basePosition = pivotPosition - (currentRotation * rotationPivotOffset);
             }
 
-            if (useShake || easing == EasingType.Shake)
+            if ((useShake || easing == EasingType.Shake) && animatePosition)
             {
                 float time = elapsedTime * Mathf.Max(0f, shakeFrequency);
                 Vector3 noise = new Vector3(
