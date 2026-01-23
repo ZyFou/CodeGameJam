@@ -11,8 +11,7 @@ public class HUDController : MonoBehaviour
     public TextMeshPro lastScoreText;
     public TextMeshPro msgText;
 
-    public void SetState(int money, int tickets, int tour, int round, int roundsPerTour,
-                         int entryCost, int bonusPool, int lastScore, string msg)
+    public void SetState(int money, int tickets, int tour, int round, int roundsPerTour, int entryCost, int bonusPool, int lastScore, string msg)
     {
         if (moneyText) moneyText.text = $"Money: {money}€";
         if (ticketsText) ticketsText.text = $"Tickets: {tickets}";
