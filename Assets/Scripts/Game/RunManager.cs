@@ -241,4 +241,18 @@ public class RunManager : MonoBehaviour
     {
         InsertMoney(GetWantedInsertAmount());
     }
+    
+    public void TryPayEntryAndStartRound()
+    {
+        // Si ton RunManager a déjà une méthode genre PressStandButton() ou PayAndStartRound()
+        // appelle-la ici. Sinon, branche ta logique de paiement entrée + lancement round.
+        PressStandButton();
+    }
+
+    public void DepositToDebt()
+    {
+        // TODO: Implémenter le système de dépôt de dette
+        // Pour l'instant, cette fonctionnalité n'est pas encore implémentée
+        Debug.Log("[RUN] DepositToDebt appelé mais pas encore implémenté");
+    }
 }
