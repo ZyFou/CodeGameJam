@@ -1,29 +1,75 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 public class HUDController : MonoBehaviour
 {
-    public TextMeshPro moneyText;
-    public TextMeshPro ticketsText;
-    public TextMeshPro tourText;
-    public TextMeshPro costText;
-    public TextMeshPro poolText;
-    public TextMeshPro lastScoreText;
-    public TextMeshPro msgText;
+    [Header("World Texts (TMP 3D)")]
+    public TextMeshPro scoreText; // TEXT_Score
+    public TextMeshPro comboText; // TEXT_Combo
+    public TextMeshPro tourRoundText; // TXT_TourRound
 
-    public void SetState(int money, int tickets, int tour, int round, int roundsPerTour, int entryCost, int bonusPool, int lastScore, string msg)
+    public TextMeshPro moneyText; // TXT_Money
+    public TextMeshPro ticketsText; // TXT_Ticket
+
+    public TextMeshPro roundCostText; // TXT_RoundCost
+
+    public TextMeshPro debtText; // TXT_Debt
+    public TextMeshPro depositedText; // TXT_Deposited
+    public TextMeshPro ticketRewardText; // TXT_TicketReward
+
+    public TextMeshPro messageText; // TXT_Message
+
+    /// <summary>
+    /// ticketReward = bonus tickets si la dette est remboursée maintenant (ex: 6/4/2/0)
+    /// depositedThisTour = total déjà déposé au guichet sur ce tour
+    /// comboMultiplier : ex 1.0, 1.1, 1.2 ...
+    /// </summary>
+    public void SetState(
+        int score,
+        int comboCount,
+        float comboMultiplier,
+        int tour,
+        int round,
+        int roundsPerTour,
+        int money,
+        int tickets,
+        int roundCost,
+        int debtRemaining,
+        int debtTotal,
+        int depositedThisTour,
+        int ticketReward,
+        string message
+    )
     {
-        if (moneyText) moneyText.text = $"Money: {money}€";
-        if (ticketsText) ticketsText.text = $"Tickets: {tickets}";
-        if (tourText) tourText.text = $"Tour {tour} — Round {round}/{roundsPerTour}";
-        if (costText) costText.text = $"Entry cost: {entryCost}€";
-        if (poolText) poolText.text = $"Tour bonus pool: {bonusPool}";
-        if (lastScoreText) lastScoreText.text = $"Last score: {lastScore}";
-        if (msgText) msgText.text = msg;
+        if (scoreText)
+            scoreText.text = $"Score: {score}";
+        if (comboText)
+            comboText.text = $"Combo: {comboCount} | Mult: x{comboMultiplier:0.0}";
+        if (tourRoundText)
+            tourRoundText.text = $"Tour {tour} — Round {round}/{roundsPerTour}";
+
+        if (moneyText)
+            moneyText.text = $"Money: {money}€";
+        if (ticketsText)
+            ticketsText.text = $"Tickets: {tickets}";
+
+        if (roundCostText)
+            roundCostText.text = $"Round cost: {roundCost}€";
+
+        if (debtText)
+            debtText.text = $"Debt: {debtRemaining}€ / {debtTotal}€";
+        if (depositedText)
+            depositedText.text = $"Deposited: {depositedThisTour}€";
+        if (ticketRewardText)
+            ticketRewardText.text = $"Ticket reward: +{ticketReward}";
+
+        if (messageText)
+            messageText.text = message;
     }
 
-    public void SetMessage(string msg)
+    public void SetMessage(string message)
     {
-        if (msgText) msgText.text = msg;
+        if (messageText)
+            messageText.text = message;
     }
 }

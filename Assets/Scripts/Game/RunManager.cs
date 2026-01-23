@@ -176,15 +176,20 @@ public class RunManager : MonoBehaviour
         if (hud != null)
         {
             hud.SetState(
-                money,
-                tickets,
-                tourIndex,
-                roundInTour,
-                rules.roundsPerTour,
-                GetEntryCost(),
-                tourBonusPool,
-                lastRoundScore,
-                msg
+                lastRoundScore,        // score
+                0,                     // comboCount (pas encore implémenté)
+                1.0f,                  // comboMultiplier (pas encore implémenté)
+                tourIndex,             // tour
+                roundInTour,           // round
+                rules.roundsPerTour,   // roundsPerTour
+                money,                 // money
+                tickets,               // tickets
+                GetEntryCost(),        // roundCost
+                0,                     // debtRemaining (pas encore implémenté)
+                0,                     // debtTotal (pas encore implémenté)
+                0,                     // depositedThisTour (pas encore implémenté)
+                tourBonusPool,         // ticketReward
+                msg                    // message
             );
         }
         Debug.Log("[RUN] " + msg);
