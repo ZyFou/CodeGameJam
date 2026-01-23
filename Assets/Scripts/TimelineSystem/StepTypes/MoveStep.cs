@@ -7,10 +7,18 @@ namespace TimelineSystem
     public class MoveStep : TimelineStep
     {
         [Header("Movement Configuration")]
+        public bool animatePosition = true;
         public Vector3 targetPosition = Vector3.zero;
         public SpaceType space = SpaceType.World;
         public float duration = 1f;
         public EasingType easing = EasingType.Linear;
+
+        [Header("Shake (Optional)")]
+        public bool useShake = false;
+        public float shakeIntensity = 1f;
+        public float shakeAmplitude = 0.1f;
+        public float shakeFrequency = 20f;
+        public Vector3 shakeAxis = Vector3.one;
 
         [Header("Optional Rotation")]
         public bool animateRotation = false;
@@ -33,6 +41,7 @@ namespace TimelineSystem
         [NonSerialized] private Quaternion previewStartRotation = Quaternion.identity;
         [NonSerialized] private bool hasPreviewStartRotation = false;
         [NonSerialized] private Transform previewTargetTransform;
+        private Vector3 shakeSeed;
 
         public MoveStep() : base(StepType.Move)
         {
@@ -50,6 +59,11 @@ namespace TimelineSystem
             startRotation = targetTransform.rotation;
             startScale = targetTransform.localScale;
             startPivotPosition = startPosition + (startRotation * rotationPivotOffset);
+            shakeSeed = new Vector3(
+                UnityEngine.Random.value * 1000f,
+                UnityEngine.Random.value * 1000f,
+                UnityEngine.Random.value * 1000f
+            );
         }
 
         public void SetPreviewStartRotation(Quaternion rotation)
@@ -89,6 +103,10 @@ namespace TimelineSystem
             {
                 worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
             }
+            if (!animatePosition)
+            {
+                worldTargetPosition = startPosition;
+            }
 
             Quaternion currentRotation = startRotation;
             Quaternion targetQuat = startRotation;
@@ -108,7 +126,28 @@ namespace TimelineSystem
                 basePosition = pivotPosition - (currentRotation * rotationPivotOffset);
             }
 
-            targetTransform.position = basePosition;
+            if ((useShake || easing == EasingType.Shake) && animatePosition)
+            {
+                float time = elapsedTime * Mathf.Max(0f, shakeFrequency);
+                Vector3 noise = new Vector3(
+                    Mathf.PerlinNoise(shakeSeed.x, time) * 2f - 1f,
+                    Mathf.PerlinNoise(shakeSeed.y, time) * 2f - 1f,
+                    Mathf.PerlinNoise(shakeSeed.z, time) * 2f - 1f
+                );
+                float amplitude = Mathf.Max(0f, shakeAmplitude);
+                float intensity = Mathf.Clamp01(shakeIntensity);
+                Vector3 axis = new Vector3(
+                    Mathf.Clamp01(Mathf.Abs(shakeAxis.x)),
+                    Mathf.Clamp01(Mathf.Abs(shakeAxis.y)),
+                    Mathf.Clamp01(Mathf.Abs(shakeAxis.z))
+                );
+                basePosition += Vector3.Scale(noise, axis) * amplitude * intensity;
+            }
+
+            if (animatePosition || animateRotation)
+            {
+                targetTransform.position = basePosition;
+            }
 
             // Lerp scale if enabled
             if (animateScale)
@@ -130,6 +169,10 @@ namespace TimelineSystem
             {
                 worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
             }
+            if (!animatePosition)
+            {
+                worldTargetPosition = startPosition;
+            }
 
             if (animateRotation)
             {
@@ -139,7 +182,10 @@ namespace TimelineSystem
             }
             else
             {
-                targetTransform.position = worldTargetPosition;
+                if (animatePosition)
+                {
+                    targetTransform.position = worldTargetPosition;
+                }
             }
 
             if (animateScale)
