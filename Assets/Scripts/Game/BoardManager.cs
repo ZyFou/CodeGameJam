@@ -14,7 +14,7 @@ public class BoardManager : MonoBehaviour
     public System.Action<int> OnRoundEndedScore;
 
     [Header("Debug")]
-    public bool playOnStart = true;
+    public bool playOnStart = false;
 
     [Tooltip("Tour courant (1 tour = rules.roundsPerTour rounds)")]
     public int currentTourIndex = 1;
