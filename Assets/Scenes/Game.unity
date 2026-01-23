@@ -1978,7 +1978,8 @@ MonoBehaviour:
   - {fileID: 1610416282}
   - {fileID: 146809617}
   playOnStart: 1
-  currentTour: 1
+  currentTourIndex: 1
+  currentRoundInTour: 1
 --- !u!1 &1199283122
 GameObject:
   m_ObjectHideFlags: 0

@@ -24,6 +24,7 @@ public class BoardManager : MonoBehaviour
         public bool isOn;
         public ButtonKind kind;
         public float offAt;
+        public float yellowAt; // Quand le bouton doit passer de Green à Yellow
     }
 
     ButtonRuntime[] rt;
@@ -88,6 +89,15 @@ public class BoardManager : MonoBehaviour
         {
             Debug.Log($"[COMBO] expired. stack was {comboStack}");
             ResetCombo();
+        }
+
+        // transition Green -> Yellow automatique
+        for (int i = 0; i < rt.Length; i++)
+        {
+            if (rt[i].isOn && rt[i].kind == ButtonKind.Green && rt[i].yellowAt > 0f && t >= rt[i].yellowAt)
+            {
+                SetButton(i, ButtonKind.Yellow, true);
+            }
         }
 
         // auto-off
@@ -242,13 +252,31 @@ public class BoardManager : MonoBehaviour
         if (off.Count == 0) return;
 
         int idx = off[Random.Range(0, off.Count)];
-        ButtonKind kind = RollKind();
+        ButtonKind intendedKind = RollKind();
 
         // si on roll Neutral mais allowNeutralOn=false => on ne spawn pas
-        if (kind == ButtonKind.Neutral && !rules.allowNeutralOn)
+        if (intendedKind == ButtonKind.Neutral && !rules.allowNeutralOn)
             return;
 
-        SetButton(idx, kind, true);
+        // Tous les boutons normaux (Green/Yellow) commencent toujours en Green
+        // On track quand ils doivent passer en Yellow
+        ButtonKind spawnKind = intendedKind;
+        float yellowAt = 0f;
+        
+        if (intendedKind == ButtonKind.Yellow)
+        {
+            // Ce bouton devrait être Yellow, mais on le spawn en Green
+            // Il passera automatiquement en Yellow après la moitié du temps
+            spawnKind = ButtonKind.Green;
+            yellowAt = Time.time + (rules.onLifetime * 0.5f);
+        }
+        else if (intendedKind == ButtonKind.Green)
+        {
+            // Les boutons Green passent aussi en Yellow après la moitié du temps
+            yellowAt = Time.time + (rules.onLifetime * 0.5f);
+        }
+
+        SetButton(idx, spawnKind, true, yellowAt);
         rt[idx].offAt = Time.time + rules.onLifetime;
     }
 
@@ -279,11 +307,12 @@ public class BoardManager : MonoBehaviour
         return ButtonKind.Neutral;
     }
 
-    void SetButton(int index, ButtonKind kind, bool on)
+    void SetButton(int index, ButtonKind kind, bool on, float yellowAt = 0f)
     {
         rt[index].kind = kind;
         rt[index].isOn = on;
         rt[index].offAt = on ? Time.time + rules.onLifetime : 0f;
+        rt[index].yellowAt = on ? yellowAt : 0f;
 
         if (buttons[index] != null)
             buttons[index].SetVisual(kind, on);
