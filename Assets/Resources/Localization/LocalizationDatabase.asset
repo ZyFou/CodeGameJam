@@ -17,14 +17,14 @@ MonoBehaviour:
   - code: en
     displayName: English
   - code: fr
-    displayName: Français
+    displayName: "Fran\xE7ais"
   entries:
   - key: settings.title
     values:
     - languageCode: en
       text: Settings
     - languageCode: fr
-      text: Paramètres
+      text: "Param\xE8tres"
   - key: settings.audio
     values:
     - languageCode: en
@@ -49,3 +49,21 @@ MonoBehaviour:
       text: Hello {playerName}
     - languageCode: fr
       text: Bonjour {playerName}
+  - key: mainmenu.play
+    values:
+    - languageCode: en
+      text: Play
+    - languageCode: fr
+      text: Jouer
+  - key: mainmenu.quit
+    values:
+    - languageCode: en
+      text: Quit
+    - languageCode: fr
+      text: Quitter
+  - key: mainmenu.quit
+    values:
+    - languageCode: en
+      text: Continue
+    - languageCode: fr
+      text: '>'
