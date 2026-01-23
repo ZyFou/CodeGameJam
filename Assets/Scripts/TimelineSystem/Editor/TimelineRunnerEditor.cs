@@ -258,6 +258,10 @@ namespace TimelineSystem
             if (step is MoveStep moveStep)
             {
                 // Move step fields
+                Rect durationRect = new Rect(x + 15, currentY, width - 20, lineHeight);
+                moveStep.duration = EditorGUI.FloatField(durationRect, "Duration", moveStep.duration);
+                currentY += lineHeight + spacing;
+
                 Rect animPosRect = new Rect(x + 15, currentY, width - 20, lineHeight);
                 moveStep.animatePosition = EditorGUI.Toggle(animPosRect, "Animate Position", moveStep.animatePosition);
                 currentY += lineHeight + spacing;
@@ -271,13 +275,12 @@ namespace TimelineSystem
                     Rect spaceRect = new Rect(x + 15, currentY, width - 20, lineHeight);
                     moveStep.space = (SpaceType)EditorGUI.EnumPopup(spaceRect, "Space", moveStep.space);
                     currentY += lineHeight + spacing;
+                }
 
-                    Rect durationRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.duration = EditorGUI.FloatField(durationRect, "Duration", moveStep.duration);
-                    currentY += lineHeight + spacing;
-
+                if (moveStep.animatePosition)
+                {
                     Rect easingRect = new Rect(x + 15, currentY, width - 20, lineHeight);
-                    moveStep.easing = DrawEasingSelector(easingRect, "Easing", moveStep.easing, false);
+                    moveStep.easing = DrawEasingSelector(easingRect, "Position Easing", moveStep.easing, false);
                     currentY += lineHeight + spacing;
 
                     Rect easePreviewRect = new Rect(x + 15, currentY, width - 20, lineHeight * 2f);
@@ -378,10 +381,12 @@ namespace TimelineSystem
             if (step is MoveStep moveStep)
             {
                 float previewHeight = lineHeight * 2f;
+                height += lineHeight; // duration
                 height += lineHeight; // animatePosition toggle
                 if (moveStep.animatePosition)
                 {
-                    height += lineHeight * 4 + previewHeight; // position, space, duration, easing, preview
+                    height += lineHeight * 2; // position, space
+                    height += lineHeight + previewHeight; // easing + preview
                     height += lineHeight; // shake toggle
                     if (moveStep.useShake) height += lineHeight * 4; // shake params
                 }
