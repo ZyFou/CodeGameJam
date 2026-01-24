@@ -18,7 +18,8 @@ public class RunManager : MonoBehaviour
     [SerializeField] private int demoRoundsToPlay = 3;
     private int totalRoundsPlayed;
     private bool demoCompleted;
-    private const string DemoCompletedMessage = "Démo terminée";
+    private const string DemoBetweenRoundsMessage = "Veuillez insérer des pièces dans la fente de la machine à droite et relancez une partie.";
+    private const string DemoCompletedMessage = "Bravo, vous avez terminé la démo. De prochains rounds et des objets pour pimenter votre partie arriveront bientôt.";
     private const string IdlePromptMessage = "Appuyez sur le bouton sur la table rouge pour lancer le jeu";
 
     [Header("Refs")]
@@ -176,9 +177,10 @@ public class RunManager : MonoBehaviour
         roundInTour = 1;
         StartTour();
 
-        // Pour la démo: s'assurer qu'on peut lancer au moins le premier round.
+        // Pour la démo: s'assurer qu'on peut lancer les rounds de démo.
         if (demoOneRoundOnly)
         {
+            demoRoundsToPlay = 3;
             int firstCost = GetEntryCost();
             if (money < firstCost)
                 money = firstCost;
@@ -280,9 +282,9 @@ public class RunManager : MonoBehaviour
             }
             else
             {
-            state = RunState.GameOver;
-            RefreshHUD($"GAME OVER : pas assez d'argent pour payer {cost}€.");
-            return;
+                state = RunState.GameOver;
+                RefreshHUD($"GAME OVER : pas assez d'argent pour payer {cost}€.");
+                return;
             }
         }
 
@@ -313,10 +315,18 @@ public class RunManager : MonoBehaviour
         roundsPlayedThisTour++;
         totalRoundsPlayed++;
 
-        // Démo: on s'arrête après le 1er round (ou N si configuré)
+        // Démo: on s'arrête après N rounds, sinon on demande de relancer
         if (demoOneRoundOnly && !demoCompleted && totalRoundsPlayed >= Mathf.Max(1, demoRoundsToPlay))
         {
             CompleteDemo(score, moneyGain);
+            return;
+        }
+        if (demoOneRoundOnly && !demoCompleted)
+        {
+            state = RunState.WaitingToPay;
+            debtGraceActive = false;
+            debtGraceEndsAt = 0f;
+            RefreshHUD(DemoBetweenRoundsMessage);
             return;
         }
 
