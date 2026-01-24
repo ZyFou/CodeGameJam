@@ -159,7 +159,19 @@ public class RunManager : MonoBehaviour
         tourBonusPool = rules.tourBonusTicketsStart;
         roundInTour = 1;
 
-        debtTotal = rules.debtStart + (tourIndex - 1) * rules.debtAddPerTour;
+        float multiplier = rules.debtAddMultiplier;
+        float rawDebt;
+        if (Mathf.Approximately(multiplier, 1f))
+        {
+            rawDebt = rules.debtStart + (tourIndex - 1) * rules.debtAddPerTour;
+        }
+        else
+        {
+            float geoSum = (Mathf.Pow(multiplier, tourIndex - 1) - 1f) / (multiplier - 1f);
+            rawDebt = rules.debtStart + rules.debtAddPerTour * geoSum;
+        }
+
+        debtTotal = Mathf.CeilToInt(rawDebt / 10f) * 10;
         debtRemaining = debtTotal;
         depositedThisTour = 0;
         roundsPlayedThisTour = 0;

@@ -110,6 +110,9 @@ public class RuleSetSO : ScriptableObject
     [Tooltip("Augmentation de la dette par tour")]
     public int debtAddPerTour = 5;
 
+    [Tooltip("Multiplicateur appliqué à l'ajout de dette (1 = linéaire)")]
+    public float debtAddMultiplier = 1f;
+
     [Tooltip("Montant de dépôt par tour (step * tourIndex)")]
     public int depositStepPerTour = 5;
 
