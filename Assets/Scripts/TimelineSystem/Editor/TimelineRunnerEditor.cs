@@ -55,6 +55,8 @@ namespace TimelineSystem
         private SerializedProperty pathGradientProperty;
         private SerializedProperty pathLineRendererProperty;
         private SerializedProperty updatePathInRuntimeProperty;
+        private SerializedProperty forceLocalSpaceProperty;
+        private SerializedProperty localSpaceRootProperty;
 
         private void OnEnable()
         {
@@ -75,6 +77,8 @@ namespace TimelineSystem
             pathGradientProperty = serializedObject.FindProperty("pathGradient");
             pathLineRendererProperty = serializedObject.FindProperty("pathLineRenderer");
             updatePathInRuntimeProperty = serializedObject.FindProperty("updatePathInRuntime");
+            forceLocalSpaceProperty = serializedObject.FindProperty("forceLocalSpace");
+            localSpaceRootProperty = serializedObject.FindProperty("localSpaceRoot");
 
             SetupReorderableList();
         }
@@ -126,10 +130,15 @@ namespace TimelineSystem
                 // Detect target object change and auto-fill values for MoveStep
                 if (newTarget != step.targetObject && newTarget != null && step is MoveStep moveStep)
                 {
-                    moveStep.targetPosition = newTarget.transform.position;
-                    if (moveStep.space == SpaceType.Local && newTarget.transform.parent != null)
+                    bool useLocal = ShouldUseLocalSpaceForEditor(moveStep);
+                    Transform localRoot = ResolveLocalSpaceRootForEditor(newTarget);
+                    if (useLocal && localRoot != null)
                     {
-                        moveStep.targetPosition = newTarget.transform.parent.InverseTransformPoint(moveStep.targetPosition);
+                        moveStep.targetPosition = localRoot.InverseTransformPoint(newTarget.transform.position);
+                    }
+                    else
+                    {
+                        moveStep.targetPosition = newTarget.transform.position;
                     }
                     moveStep.targetRotation = newTarget.transform.rotation.eulerAngles;
                     moveStep.targetScale = newTarget.transform.localScale;
@@ -610,6 +619,26 @@ namespace TimelineSystem
             }
         }
 
+        private bool ShouldUseLocalSpaceForEditor(MoveStep moveStep)
+        {
+            return timelineRunner.forceLocalSpace || moveStep.space == SpaceType.Local;
+        }
+
+        private Transform ResolveLocalSpaceRootForEditor(GameObject target)
+        {
+            if (timelineRunner.localSpaceRoot != null)
+            {
+                return timelineRunner.localSpaceRoot;
+            }
+
+            if (timelineRunner.forceLocalSpace)
+            {
+                return timelineRunner.transform;
+            }
+
+            return target != null ? target.transform.parent : null;
+        }
+
         private void AddStep(StepType type)
         {
             Undo.RecordObject(timelineRunner, "Add Timeline Step");
@@ -691,6 +720,13 @@ namespace TimelineSystem
                 EditorGUILayout.PropertyField(updatePathInRuntimeProperty);
                 EditorGUI.indentLevel--;
             }
+
+            EditorGUILayout.Space(10);
+
+            // Space Overrides
+            EditorGUILayout.LabelField("Space Overrides", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(forceLocalSpaceProperty, new GUIContent("Force Local Space"));
+            EditorGUILayout.PropertyField(localSpaceRootProperty, new GUIContent("Local Space Root"));
 
             EditorGUILayout.Space(10);
 

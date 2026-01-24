@@ -36,6 +36,10 @@ namespace TimelineSystem
         public LineRenderer pathLineRenderer;
         public bool updatePathInRuntime = true;
 
+        [Header("Space Overrides")]
+        public bool forceLocalSpace = false;
+        public Transform localSpaceRoot;
+
         [Header("Status (Read-Only)")]
         [SerializeField] private PlaybackState playbackState = PlaybackState.Stopped;
         [SerializeField] private int currentStepIndex = -1;
@@ -257,6 +261,8 @@ namespace TimelineSystem
                 // Determine target object
                 GameObject target = step.targetObject != null ? step.targetObject : gameObject;
 
+                ApplySpaceOverrides(step);
+
                 // Execute step
                 yield return stepExecutor.ExecuteStep(step, target, OnStepExecuted);
 
@@ -331,13 +337,11 @@ namespace TimelineSystem
                     Quaternion startRot = objectLastRot[target];
 
                     Vector3 targetPos = moveStep.targetPosition;
-
-                    // Handle local vs world space
-                    if (moveStep.space == SpaceType.Local && target != null)
+                    bool useLocal = ShouldUseLocalSpace(moveStep);
+                    Transform localRoot = ResolveLocalSpaceRoot(target);
+                    if (useLocal && localRoot != null)
                     {
-                        targetPos = target.transform.parent != null
-                            ? target.transform.parent.TransformPoint(targetPos)
-                            : targetPos;
+                        targetPos = localRoot.TransformPoint(targetPos);
                     }
                     if (!moveStep.animatePosition)
                     {
@@ -383,7 +387,21 @@ namespace TimelineSystem
             if (pathLineRenderer != null)
             {
                 pathLineRenderer.positionCount = pathPoints.Count;
-                pathLineRenderer.SetPositions(pathPoints.ToArray());
+
+                if (pathLineRenderer.useWorldSpace)
+                {
+                    pathLineRenderer.SetPositions(pathPoints.ToArray());
+                }
+                else
+                {
+                    Vector3[] localPoints = new Vector3[pathPoints.Count];
+                    Transform lineTransform = pathLineRenderer.transform;
+                    for (int i = 0; i < pathPoints.Count; i++)
+                    {
+                        localPoints[i] = lineTransform.InverseTransformPoint(pathPoints[i]);
+                    }
+                    pathLineRenderer.SetPositions(localPoints);
+                }
 
                 if (useGradientColors && pathGradient != null)
                 {
@@ -422,6 +440,8 @@ namespace TimelineSystem
                 TimelineStep step = steps[i];
                 if (step != null && step.enabled && step is MoveStep moveStep)
                 {
+                    ApplySpaceOverrides(moveStep);
+
                     // Determine target object for this step
                     GameObject target = step.targetObject != null ? step.targetObject : gameObject;
 
@@ -451,13 +471,11 @@ namespace TimelineSystem
 
                     // Get target position
                     Vector3 targetPos = moveStep.targetPosition;
-
-                    // Handle local vs world space
-                    if (moveStep.space == SpaceType.Local && target != null)
+                    bool useLocal = ShouldUseLocalSpace(moveStep);
+                    Transform localRoot = ResolveLocalSpaceRoot(target);
+                    if (useLocal && localRoot != null)
                     {
-                        targetPos = target.transform.parent != null
-                            ? target.transform.parent.TransformPoint(targetPos)
-                            : targetPos;
+                        targetPos = localRoot.TransformPoint(targetPos);
                     }
                     if (!moveStep.animatePosition)
                     {
@@ -513,5 +531,45 @@ namespace TimelineSystem
         }
 
         #endregion
+
+        private bool ShouldUseLocalSpace(MoveStep moveStep)
+        {
+            return forceLocalSpace || moveStep.space == SpaceType.Local;
+        }
+
+        private Transform ResolveLocalSpaceRoot(GameObject target)
+        {
+            if (localSpaceRoot != null)
+            {
+                return localSpaceRoot;
+            }
+
+            if (forceLocalSpace)
+            {
+                return transform;
+            }
+
+            return target != null ? target.transform.parent : null;
+        }
+
+        private void ApplySpaceOverrides(TimelineStep step)
+        {
+            if (step == null) return;
+
+            step.forceLocalSpace = forceLocalSpace;
+
+            if (localSpaceRoot != null)
+            {
+                step.spaceRootOverride = localSpaceRoot;
+            }
+            else if (forceLocalSpace)
+            {
+                step.spaceRootOverride = transform;
+            }
+            else
+            {
+                step.spaceRootOverride = null;
+            }
+        }
     }
 }

@@ -77,6 +77,10 @@ public class FPSAimController : MonoBehaviour
             var clickable = hit.collider.GetComponentInParent<IClickable>();
             if (clickable != null)
             {
+                // Jouer le son du bouton si présent
+                var soundPlayer = hit.collider.GetComponentInParent<ButtonSoundPlayer>();
+                soundPlayer?.PlayClickSound();
+                
                 clickable.Click(new ClickContext { cam = cam, hit = hit, ray = ray });
             }
         }

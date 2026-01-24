@@ -284,9 +284,13 @@ public class RunManager : MonoBehaviour
             tourIndex++;
             StartTour();
 
+            // Donner automatiquement le prix du prochain round pour éviter que le joueur soit bloqué
+            int nextRoundCost = GetEntryCost();
+            money += nextRoundCost;
+
             state = RunState.WaitingToPay;
             RefreshHUD(
-                $"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. {endMsg} Appuie pour lancer le prochain round."
+                $"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. {endMsg} +{nextRoundCost}€ pour le prochain round. Appuie pour lancer le prochain round."
             );
             return;
         }
@@ -423,8 +427,13 @@ public class RunManager : MonoBehaviour
 
             tourIndex++;
             StartTour();
+
+            // Donner automatiquement le prix du prochain round pour éviter que le joueur soit bloqué
+            int nextRoundCost = GetEntryCost();
+            money += nextRoundCost;
+
             state = RunState.WaitingToPay;
-            RefreshHUD($"Dette remboursée: +{bonus} tickets bonus. Nouveau tour.");
+            RefreshHUD($"Dette remboursée: +{bonus} tickets bonus. Nouveau tour. +{nextRoundCost}€ pour le prochain round.");
             return;
         }
 

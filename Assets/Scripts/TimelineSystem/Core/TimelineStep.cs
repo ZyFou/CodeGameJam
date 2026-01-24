@@ -47,6 +47,8 @@ namespace TimelineSystem
 
         // Reference to the target object for this step
         public GameObject targetObject;
+        [NonSerialized] public bool forceLocalSpace = false;
+        [NonSerialized] public Transform spaceRootOverride;
 
         protected TimelineStep(StepType type)
         {

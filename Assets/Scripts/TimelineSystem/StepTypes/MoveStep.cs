@@ -33,7 +33,7 @@ namespace TimelineSystem
 
         // Internal state
         private Vector3 startPosition;
-        private Vector3 startPivotPosition;
+        private Vector3 startLocalPosition;
         private Quaternion startRotation;
         private Vector3 startScale;
         private float elapsedTime;
@@ -56,9 +56,17 @@ namespace TimelineSystem
 
             // Store starting values
             startPosition = targetTransform.position;
+            Transform localRoot = ResolveLocalSpaceRoot(targetTransform);
+            if (localRoot != null)
+            {
+                startLocalPosition = localRoot.InverseTransformPoint(startPosition);
+            }
+            else
+            {
+                startLocalPosition = targetTransform.localPosition;
+            }
             startRotation = targetTransform.rotation;
             startScale = targetTransform.localScale;
-            startPivotPosition = startPosition + (startRotation * rotationPivotOffset);
             shakeSeed = new Vector3(
                 UnityEngine.Random.value * 1000f,
                 UnityEngine.Random.value * 1000f,
@@ -97,15 +105,18 @@ namespace TimelineSystem
             // Standard movement
             float easedT = Easing.Ease(t, easing);
 
-            // Calculate target position in world space
+            Transform localRoot = ResolveLocalSpaceRoot(targetTransform);
+            bool useLocal = UseLocalSpace();
+            Vector3 worldStartPosition = startPosition;
             Vector3 worldTargetPosition = targetPosition;
-            if (space == SpaceType.Local && targetTransform.parent != null)
+            if (useLocal && localRoot != null)
             {
-                worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
+                worldStartPosition = localRoot.TransformPoint(startLocalPosition);
+                worldTargetPosition = localRoot.TransformPoint(targetPosition);
             }
             if (!animatePosition)
             {
-                worldTargetPosition = startPosition;
+                worldTargetPosition = worldStartPosition;
             }
 
             Quaternion currentRotation = startRotation;
@@ -118,11 +129,12 @@ namespace TimelineSystem
                 targetTransform.rotation = currentRotation;
             }
 
-            Vector3 basePosition = Vector3.Lerp(startPosition, worldTargetPosition, easedT);
+            Vector3 basePosition = Vector3.Lerp(worldStartPosition, worldTargetPosition, easedT);
             if (animateRotation && rotationPivotOffset != Vector3.zero)
             {
+                Vector3 pivotStart = worldStartPosition + (startRotation * rotationPivotOffset);
                 Vector3 pivotEnd = worldTargetPosition + (targetQuat * rotationPivotOffset);
-                Vector3 pivotPosition = Vector3.Lerp(startPivotPosition, pivotEnd, easedT);
+                Vector3 pivotPosition = Vector3.Lerp(pivotStart, pivotEnd, easedT);
                 basePosition = pivotPosition - (currentRotation * rotationPivotOffset);
             }
 
@@ -164,14 +176,18 @@ namespace TimelineSystem
             if (targetTransform == null) return;
 
             // Snap to final values
+            Transform localRoot = ResolveLocalSpaceRoot(targetTransform);
+            bool useLocal = UseLocalSpace();
+            Vector3 worldStartPosition = startPosition;
             Vector3 worldTargetPosition = targetPosition;
-            if (space == SpaceType.Local && targetTransform.parent != null)
+            if (useLocal && localRoot != null)
             {
-                worldTargetPosition = targetTransform.parent.TransformPoint(targetPosition);
+                worldStartPosition = localRoot.TransformPoint(startLocalPosition);
+                worldTargetPosition = localRoot.TransformPoint(targetPosition);
             }
             if (!animatePosition)
             {
-                worldTargetPosition = startPosition;
+                worldTargetPosition = worldStartPosition;
             }
 
             if (animateRotation)
@@ -294,12 +310,34 @@ namespace TimelineSystem
             Vector3 worldTarget = targetPosition;
             Transform target = GetPreviewTargetTransform();
 
-            if (space == SpaceType.Local && target != null && target.parent != null)
+            bool useLocal = UseLocalSpace();
+            Transform localRoot = ResolveLocalSpaceRoot(target);
+            if (useLocal && localRoot != null)
             {
-                worldTarget = target.parent.TransformPoint(targetPosition);
+                worldTarget = localRoot.TransformPoint(targetPosition);
             }
 
             return worldTarget;
+        }
+
+        private bool UseLocalSpace()
+        {
+            return forceLocalSpace || space == SpaceType.Local;
+        }
+
+        private Transform ResolveLocalSpaceRoot(Transform target)
+        {
+            if (spaceRootOverride != null)
+            {
+                return spaceRootOverride;
+            }
+
+            if (target != null)
+            {
+                return target.parent;
+            }
+
+            return null;
         }
     }
 }
