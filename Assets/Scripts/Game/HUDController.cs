@@ -50,7 +50,7 @@ public class HUDController : MonoBehaviour
         if (comboText)
             comboText.text = $"{comboCount}";
         if (tourRoundText)
-            tourRoundText.text = $"{tour}/{roundsPerTour}";
+            tourRoundText.text = $"{round}/{roundsPerTour}";
         if (tourCountText)
             tourCountText.text = $"{tour}";
         if (comboMultiplierText)

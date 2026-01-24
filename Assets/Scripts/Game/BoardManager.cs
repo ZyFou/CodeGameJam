@@ -153,6 +153,9 @@ public class BoardManager : MonoBehaviour
     {
         roundRunning = false;
 
+        for (int i = 0; i < rt.Length; i++)
+            SetButton(i, ButtonKind.Neutral, false);
+
         Debug.Log($"Round ended. Score={score}, BlackStrikes={blackStrikes}, ComboStack={comboStack}");
 
         // NEW: notifier le RunManager

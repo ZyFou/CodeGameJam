@@ -40,6 +40,11 @@ public class RunManager : MonoBehaviour
     public int debtRemaining;
     public int depositedThisTour;
 
+    [Header("Debt Grace")]
+    [SerializeField] private float debtGraceSeconds = 10f;
+    private bool debtGraceActive;
+    private float debtGraceEndsAt;
+
     void OnEnable()
     {
         if (board != null)
@@ -58,6 +63,16 @@ public class RunManager : MonoBehaviour
         if (state == RunState.InRound && board != null && hud != null)
         {
             RefreshHUDDuringRound();
+        }
+
+        if (debtGraceActive && Time.time >= debtGraceEndsAt)
+        {
+            debtGraceActive = false;
+            if (debtRemaining > 0)
+            {
+                state = RunState.GameOver;
+                RefreshHUD("Game Over : dette non remboursée à temps.");
+            }
         }
     }
 
@@ -148,6 +163,8 @@ public class RunManager : MonoBehaviour
         debtRemaining = debtTotal;
         depositedThisTour = 0;
         roundsPlayedThisTour = 0;
+        debtGraceActive = false;
+        debtGraceEndsAt = 0f;
     }
 
     int GetEntryCost()
@@ -188,6 +205,12 @@ public class RunManager : MonoBehaviour
 
     void PayAndStartRound()
     {
+        if (debtGraceActive || roundsPlayedThisTour >= rules.roundsPerTour)
+        {
+            hud?.SetMessage("Tour terminé : rembourse la dette.");
+            return;
+        }
+
         int cost = GetEntryCost();
 
         if (money < cost)
@@ -228,9 +251,11 @@ public class RunManager : MonoBehaviour
 
         if (roundsPlayedThisTour >= rules.roundsPerTour && debtRemaining > 0)
         {
-            state = RunState.GameOver;
+            debtGraceActive = true;
+            debtGraceEndsAt = Time.time + debtGraceSeconds;
+            state = RunState.WaitingToPay;
             RefreshHUD(
-                $"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. Dette non remboursée."
+                $"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. Dette non remboursée : {Mathf.CeilToInt(debtGraceSeconds)}s."
             );
             return;
         }
@@ -376,6 +401,9 @@ public class RunManager : MonoBehaviour
 
         if (debtRemaining == 0)
         {
+            debtGraceActive = false;
+            debtGraceEndsAt = 0f;
+
             int bonus = GetDebtTicketRewardPreview();
             tickets += bonus;
 
