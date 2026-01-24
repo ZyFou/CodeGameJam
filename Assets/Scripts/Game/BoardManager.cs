@@ -6,6 +6,7 @@ public class BoardManager : MonoBehaviour
 {
     [Header("Refs")]
     [SerializeField] private RuleSetSO rules;
+    [SerializeField] private RunManager run;
 
     [Header("Board (drag & drop in order)")]
     [SerializeField] private List<ArcadeButton> buttons = new();
@@ -192,18 +193,23 @@ public class BoardManager : MonoBehaviour
             {
                 if (greenStreak >= rules.comboStartAfterGreens)
                 {
-                    comboStack = Mathf.Min(comboStack + 1, rules.comboMaxStack);
+                    int comboGain = Mathf.Max(1, Mathf.RoundToInt(GetComboGainMultiplier()));
+                    comboStack = Mathf.Min(comboStack + comboGain, rules.comboMaxStack);
                     comboErrors = 0;
                     comboExpireAt = Time.time + rules.comboExpireSeconds;
 
                     if (rules.useMultiplier)
                     {
                         float mult = 1f + comboStack * rules.comboMultiplierStep;
+                        mult *= GetComboMultiplierMultiplier();
                         gained = Mathf.RoundToInt(gained * mult);
                     }
                     else
                     {
                         gained += rules.comboBonusPerGreen * comboStack;
+                        float mult = GetComboMultiplierMultiplier();
+                        if (!Mathf.Approximately(mult, 1f))
+                            gained = Mathf.RoundToInt(gained * mult);
                     }
 
                     Debug.Log($"[COMBO] streak={greenStreak} stack={comboStack} gained={gained}");
@@ -366,6 +372,22 @@ public class BoardManager : MonoBehaviour
         comboExpireAt = 0f;
     }
 
+    float GetComboGainMultiplier()
+    {
+        if (run == null || run.mods == null)
+            return 1f;
+
+        return run.mods.comboGainMultiplier;
+    }
+
+    float GetComboMultiplierMultiplier()
+    {
+        if (run == null || run.mods == null)
+            return 1f;
+
+        return run.mods.comboMultiplierMultiplier;
+    }
+
     // -------------------------
     // PUBLIC GETTERS pour HUD
     // -------------------------
@@ -385,10 +407,8 @@ public class BoardManager : MonoBehaviour
     {
         if (!IsComboUnlocked() || comboStack == 0)
             return 1.0f;
-        
-        if (rules.useMultiplier)
-            return 1f + comboStack * rules.comboMultiplierStep;
-        else
-            return 1.0f; // Si pas de multiplicateur, retourne 1.0
+
+        float baseMult = rules.useMultiplier ? 1f + comboStack * rules.comboMultiplierStep : 1f;
+        return baseMult * GetComboMultiplierMultiplier();
     }
 }

@@ -26,6 +26,11 @@ public class RunManager : MonoBehaviour
     [Header("State")]
     public RunState state = RunState.Idle;
 
+    [Header("Items (MVP)")]
+    public RunModifiers mods = new RunModifiers();
+    public ShopManager shop;
+    public InventoryManager inv;
+
     public int money;
     public int tickets;
 
@@ -136,6 +141,9 @@ public class RunManager : MonoBehaviour
 
     void StartRun()
     {
+        if (mods != null)
+            mods.ResetToBase();
+
         money = rules.startMoney;
         tickets = rules.startTickets;
 
@@ -145,6 +153,10 @@ public class RunManager : MonoBehaviour
 
         state = RunState.WaitingToPay;
         RefreshHUD("Appuie sur le bouton du stand pour payer et lancer le round.");
+
+        if (shop != null)
+            shop.RollShop();
+        RefreshShopUI();
     }
 
     void StartRunIfNeeded()
@@ -302,7 +314,7 @@ public class RunManager : MonoBehaviour
         );
     }
 
-    void RefreshHUD(string msg)
+    public void RefreshHUD(string msg)
     {
         if (hud != null)
         {
@@ -326,6 +338,12 @@ public class RunManager : MonoBehaviour
             );
         }
         Debug.Log("[RUN] " + msg);
+    }
+
+    public void RefreshShopUI()
+    {
+        shop?.RefreshUI();
+        inv?.RefreshUI();
     }
 
     // Option debug si tu veux un "Add Money" bouton
