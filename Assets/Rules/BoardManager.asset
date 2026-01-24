@@ -41,7 +41,7 @@ MonoBehaviour:
   comboExpireSeconds: 1.5
   comboResetAfterErrors: 1
   countOffClickAsComboError: 1
-  startMoney: 10
+  startMoney: 12
   startTickets: 2
   entryCostBaseByRoundInTour: 050000000c00000014000000
   entryCostAddPerTour: 3
@@ -56,6 +56,7 @@ MonoBehaviour:
   scoreToMoneyK: 10
   debtStart: 20
   debtAddPerTour: 5
+  debtAddMultiplier: 1
   depositStepPerTour: 5
   ticketsPerPlayedRound: 1
   tourBonusTicketsStart: 6

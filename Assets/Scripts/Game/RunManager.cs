@@ -82,13 +82,14 @@ public class RunManager : MonoBehaviour
         int comboCount = board.GetComboCount();
         float comboMultiplier = board.GetComboMultiplier();
         float timeRemaining = board.GetTimeRemaining();
+        int displayRound = Mathf.Clamp(roundInTour, 1, rules.roundsPerTour);
 
         hud.SetState(
             currentScore,           // score (en temps réel)
             comboCount,             // comboCount (en temps réel)
             comboMultiplier,        // comboMultiplier (en temps réel)
             tourIndex,              // tour
-            roundInTour,            // round
+            displayRound,           // round
             rules.roundsPerTour,    // roundsPerTour
             money,                  // money
             tickets,                // tickets
@@ -301,12 +302,13 @@ public class RunManager : MonoBehaviour
     {
         if (hud != null)
         {
+            int displayRound = Mathf.Clamp(roundInTour, 1, rules.roundsPerTour);
             hud.SetState(
                 lastRoundScore,        // score
                 0,                     // comboCount (pas encore implémenté)
                 1.0f,                  // comboMultiplier (pas encore implémenté)
                 tourIndex,             // tour
-                roundInTour,           // round
+                displayRound,          // round
                 rules.roundsPerTour,   // roundsPerTour
                 money,                 // money
                 tickets,               // tickets
@@ -398,7 +400,7 @@ public class RunManager : MonoBehaviour
 
         int step = rules.depositStepPerTour * tourIndex;
         int entryCost = GetEntryCost();
-        int maxAllowed = Mathf.Max(0, money - entryCost);
+        int maxAllowed = debtGraceActive ? money : Mathf.Max(0, money - entryCost);
         int deposit = Mathf.Min(step, Mathf.Min(maxAllowed, debtRemaining));
 
         if (deposit <= 0)
