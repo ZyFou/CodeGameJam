@@ -66,6 +66,7 @@ public class RunManager : MonoBehaviour
         int currentScore = board.GetCurrentScore();
         int comboCount = board.GetComboCount();
         float comboMultiplier = board.GetComboMultiplier();
+        float timeRemaining = board.GetTimeRemaining();
 
         hud.SetState(
             currentScore,           // score (en temps réel)
@@ -81,6 +82,7 @@ public class RunManager : MonoBehaviour
             debtTotal,              // debtTotal
             depositedThisTour,      // depositedThisTour
             tourBonusPool,          // ticketReward
+            timeRemaining,          // timeRemaining
             ""                      // message (vide pendant le round)
         );
     }
@@ -276,6 +278,7 @@ public class RunManager : MonoBehaviour
                 debtTotal,             // debtTotal
                 depositedThisTour,     // depositedThisTour
                 tourBonusPool,         // ticketReward
+                0f,                    // timeRemaining
                 msg                    // message
             );
         }
@@ -357,11 +360,13 @@ public class RunManager : MonoBehaviour
         }
 
         int step = rules.depositStepPerTour * tourIndex;
-        int deposit = Mathf.Min(step, Mathf.Min(money, debtRemaining));
+        int entryCost = GetEntryCost();
+        int maxAllowed = Mathf.Max(0, money - entryCost);
+        int deposit = Mathf.Min(step, Mathf.Min(maxAllowed, debtRemaining));
 
         if (deposit <= 0)
         {
-            RefreshHUD("Aucun dépôt possible.");
+            RefreshHUD("Aucun dépôt possible (garde assez pour jouer).");
             return;
         }
 

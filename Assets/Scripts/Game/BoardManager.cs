@@ -367,6 +367,14 @@ public class BoardManager : MonoBehaviour
     // PUBLIC GETTERS pour HUD
     // -------------------------
     public int GetCurrentScore() => score;
+
+    public float GetTimeRemaining()
+    {
+        if (!roundRunning)
+            return 0f;
+
+        return Mathf.Max(0f, roundEndAt - Time.time);
+    }
     
     public int GetComboCount() => comboStack;
     

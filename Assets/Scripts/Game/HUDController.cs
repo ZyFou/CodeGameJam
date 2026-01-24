@@ -18,6 +18,7 @@ public class HUDController : MonoBehaviour
     public TextMeshPro debtText; // TXT_Debt
     public TextMeshPro depositedText; // TXT_Deposited
     public TextMeshPro ticketRewardText; // TXT_TicketReward
+    public TMP_Text timeText; // TXT_Time
 
     public TextMeshPro messageText; // TXT_Message
 
@@ -40,6 +41,7 @@ public class HUDController : MonoBehaviour
         int debtTotal,
         int depositedThisTour,
         int ticketReward,
+        float timeRemaining,
         string message
     )
     {
@@ -68,6 +70,12 @@ public class HUDController : MonoBehaviour
             depositedText.text = $"{depositedThisTour}";
         if (ticketRewardText)
             ticketRewardText.text = $"{ticketReward}";
+
+        if (timeText)
+        {
+            int seconds = Mathf.CeilToInt(timeRemaining);
+            timeText.text = $"{seconds}";
+        }
 
         if (messageText)
             messageText.text = message;
