@@ -13,6 +13,14 @@ public class RunManager : MonoBehaviour
     [Header("Insert money behavior")]
     public bool afterEnoughOnlyAddOne = true;
 
+    [Header("Demo")]
+    [SerializeField] private bool demoOneRoundOnly = true;
+    [SerializeField] private int demoRoundsToPlay = 3;
+    private int totalRoundsPlayed;
+    private bool demoCompleted;
+    private const string DemoCompletedMessage = "Démo terminée";
+    private const string IdlePromptMessage = "Appuyez sur le bouton sur la table rouge pour lancer le jeu";
+
     [Header("Refs")]
     [SerializeField]
     private RuleSetSO rules;
@@ -62,8 +70,23 @@ public class RunManager : MonoBehaviour
             board.OnRoundEndedScore -= HandleRoundEnded;
     }
 
+    void Start()
+    {
+        // Texte par défaut au lancement (avant toute interaction)
+        if (state == RunState.Idle && !demoCompleted)
+            RefreshHUD(IdlePromptMessage);
+    }
+
     void Update()
     {
+        if (demoCompleted)
+        {
+            // On “force” le message après la fin du round, pour éviter qu’un autre système (tuto, etc.)
+            // ne vienne écraser le texte de fin de démo.
+            hud?.SetMessage(DemoCompletedMessage);
+            return;
+        }
+
         // Mettre à jour le HUD en temps réel pendant le round
         if (state == RunState.InRound && board != null && hud != null)
         {
@@ -134,7 +157,7 @@ public class RunManager : MonoBehaviour
 
             case RunState.GameOver:
                 // option: restart
-                hud?.SetMessage("Game Over. Relance la scène ou ajoute un bouton Restart.");
+                hud?.SetMessage(demoCompleted ? DemoCompletedMessage : "Game Over. Relance la scène ou ajoute un bouton Restart.");
                 break;
         }
     }
@@ -146,13 +169,23 @@ public class RunManager : MonoBehaviour
 
         money = rules.startMoney;
         tickets = rules.startTickets;
+        totalRoundsPlayed = 0;
+        demoCompleted = false;
 
         tourIndex = 1;
         roundInTour = 1;
         StartTour();
 
+        // Pour la démo: s'assurer qu'on peut lancer au moins le premier round.
+        if (demoOneRoundOnly)
+        {
+            int firstCost = GetEntryCost();
+            if (money < firstCost)
+                money = firstCost;
+        }
+
         state = RunState.WaitingToPay;
-        RefreshHUD("Appuie sur le bouton du stand pour payer et lancer le round.");
+        RefreshHUD("Appuyez sur le bouton sur la table rouge pour payer et lancer le round.");
 
         if (shop != null)
             shop.RollShop();
@@ -240,9 +273,17 @@ public class RunManager : MonoBehaviour
 
         if (money < cost)
         {
+            // Démo: on garantit l'accès aux N premiers rounds
+            if (demoOneRoundOnly && !demoCompleted && totalRoundsPlayed < Mathf.Max(1, demoRoundsToPlay))
+            {
+                money = cost;
+            }
+            else
+            {
             state = RunState.GameOver;
             RefreshHUD($"GAME OVER : pas assez d'argent pour payer {cost}€.");
             return;
+            }
         }
 
         money -= cost;
@@ -270,6 +311,14 @@ public class RunManager : MonoBehaviour
         tickets += rules.ticketsPerPlayedRound;
 
         roundsPlayedThisTour++;
+        totalRoundsPlayed++;
+
+        // Démo: on s'arrête après le 1er round (ou N si configuré)
+        if (demoOneRoundOnly && !demoCompleted && totalRoundsPlayed >= Mathf.Max(1, demoRoundsToPlay))
+        {
+            CompleteDemo(score, moneyGain);
+            return;
+        }
 
         // avancer round
         roundInTour++;
@@ -312,6 +361,16 @@ public class RunManager : MonoBehaviour
         RefreshHUD(
             $"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. Appuie pour lancer le round suivant."
         );
+    }
+
+    void CompleteDemo(int score, int moneyGain)
+    {
+        demoCompleted = true;
+        debtGraceActive = false;
+        debtGraceEndsAt = 0f;
+
+        state = RunState.GameOver;
+        RefreshHUD($"Fin round: score {score} => +{moneyGain}€ +{rules.ticketsPerPlayedRound} ticket. {DemoCompletedMessage}.");
     }
 
     public void RefreshHUD(string msg)
@@ -395,6 +454,12 @@ public class RunManager : MonoBehaviour
 
     public void TryPayEntryAndStartRound()
     {
+        if (demoCompleted)
+        {
+            hud?.SetMessage(DemoCompletedMessage);
+            return;
+        }
+
         if (state == RunState.Idle)
         {
             StartRun();
@@ -406,7 +471,18 @@ public class RunManager : MonoBehaviour
 
     public void DepositToDebt()
     {
-        StartRunIfNeeded();
+        // Empêche de déposer avant d'avoir démarré la partie via le bouton rouge
+        if (state == RunState.Idle)
+        {
+            hud?.SetMessage(IdlePromptMessage);
+            return;
+        }
+
+        if (demoCompleted)
+        {
+            hud?.SetMessage(DemoCompletedMessage);
+            return;
+        }
 
         if (state == RunState.InRound)
         {
@@ -416,7 +492,7 @@ public class RunManager : MonoBehaviour
 
         if (state == RunState.GameOver)
         {
-            hud?.SetMessage("Game Over. Relance la scène ou ajoute un bouton Restart.");
+            hud?.SetMessage(demoCompleted ? DemoCompletedMessage : "Game Over. Relance la scène ou ajoute un bouton Restart.");
             return;
         }
 
